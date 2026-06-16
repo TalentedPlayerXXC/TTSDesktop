@@ -3,12 +3,16 @@ import { Input, Button, message } from 'antd'
 import {
   SearchOutlined,
   PlayCircleOutlined,
-  SoundOutlined,
   HeartOutlined,
   HeartFilled,
+  FireFilled,
+  FireOutlined,
+  SoundOutlined,
+  FileTextOutlined,
+  TeamOutlined,
 } from '@ant-design/icons'
+import IconTTS from '../components/IconTTS'
 import './index.css'
-
 const { TextArea } = Input
 
 interface Speaker {
@@ -22,6 +26,7 @@ interface SpeakerType {
   key: string
   label: string
   isFavorite?: boolean
+  isHot?: boolean
 }
 
 const SPEAKER_TYPES: SpeakerType[] = [
@@ -35,6 +40,10 @@ const SPEAKER_TYPES: SpeakerType[] = [
   { key: 'ancient', label: '古风' },
   { key: 'news', label: '新闻' },
   { key: 'cartoon', label: '童声' },
+  // {key: 'other', label: '其他' },
+  {key: 'custom', label: '自定义' },
+  // {key: 'recent', label: '最近使用' },
+  {key: 'popular', label: '热门推荐',isHot: true},
 ]
 
 const MOCK_SPEAKERS: Speaker[] = [
@@ -112,7 +121,7 @@ const TTSComponent = () => {
       {contextHolder}
       <div className='tts-header'>
         <h2 className='tts-title'>
-          <SoundOutlined /> 智能配音
+          <IconTTS /> 智能配音
         </h2>
         <p className='tts-subtitle'>选择配音员，输入文本内容，快速生成配音</p>
       </div>
@@ -120,7 +129,7 @@ const TTSComponent = () => {
       <div className='tts-body'>
         <div className='tts-controls'>
           <div className='tts-section'>
-            <div className='tts-section-title'>配音文本</div>
+            <div className='tts-section-title'><><FileTextOutlined /> 配音文本</></div>
             <TextArea
               className='tts-text-input'
               placeholder='请输入需要配音的文本内容...'
@@ -135,7 +144,7 @@ const TTSComponent = () => {
 
         <div className='tts-preview'>
           <div className='tts-section tts-speaker-section'>
-            <div className='tts-section-title'>选择配音员</div>
+            <div className='tts-section-title'><><TeamOutlined /> 选择配音员</></div>
             <Input
               placeholder='搜索配音员'
               prefix={<SearchOutlined style={{ color: '#bbb' }} />}
@@ -153,6 +162,9 @@ const TTSComponent = () => {
                 >
                   {type.isFavorite && (
                     <HeartFilled style={{ fontSize: 11, color: '#f59e0b' }} />
+                  )}
+                  {type.isHot && (
+                    <FireFilled style={{ fontSize: 11, color: '#f59e0b' }} />
                   )}
                   {type.label}
                 </button>

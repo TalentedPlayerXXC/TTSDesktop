@@ -13,13 +13,46 @@
   align-items: center;
   min-width: 1280px;
   height: 100vh;
+  padding-top: 60px;
+  box-sizing: border-box;
 }
 
+.contentwrap {
+  width: 100%;
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  gap: 12px;
+  padding: 12px;
+  box-sizing: border-box;
+}
 .menuclass {
   width: 256px;
-  height: 50vh;
-  padding: 10px;
-  margin: 20px;
+  background: #fff;
+  border: 1px solid #f0f0f0;
   border-radius: 10px;
-  box-shadow: 0px 3px 6px 5px #ede9e9b6;
+  padding: 8px 4px;
+}
+
+.menuclass .ant-menu-item {
+  border-radius: 8px;
+  margin: 2px 4px;
+  width: auto;
+  color: #4a4660;
+  transition: all 0.2s;
+}
+
+.menuclass .ant-menu-item:hover {
+  color: #7c3aed !important;
+  background: #f8f6ff !important;
+}
+
+.menuclass .ant-menu-item-selected {
+  color: #7c3aed !important;
+  background: #f0ebff !important;
+  font-weight: 500;
+}
+
+.menuclass .ant-menu-item .anticon {
+  font-size: 25px;
 }

@@ -2,9 +2,12 @@ import { useState } from 'react';
 import { Input, Slider, Button, message, Tooltip } from 'antd';
 import {
   PlayCircleOutlined,
-  SoundOutlined,
   UndoOutlined,
+  SoundOutlined,
+  FileTextOutlined,
+  SlidersOutlined,
 } from '@ant-design/icons';
+import IconDesign from '../components/IconDesign'
 import './index.css';
 
 const { TextArea } = Input;
@@ -51,7 +54,7 @@ const VoiceDesign = () => {
 
       <div className='voice-design-header'>
         <h2 className='voice-design-title'>
-          <SoundOutlined /> 声音设计
+          <IconDesign /> 声音设计
         </h2>
         <p className='voice-design-subtitle'>调整声音参数，设计专属语音风格</p>
       </div>
@@ -59,7 +62,7 @@ const VoiceDesign = () => {
       <div className='voice-design-body'>
         <div className='voice-design-controls'>
           <div className='voice-design-section'>
-            <div className='voice-design-section-title'>语音风格提示词</div>
+            <div className='voice-design-section-title'><><FileTextOutlined /> 语音风格提示词</></div>
             <TextArea
               className='voice-design-prompt-input'
               placeholder='描述你想要的语音风格，例如：温柔知性的成熟女声，说话节奏舒缓'
@@ -93,7 +96,7 @@ const VoiceDesign = () => {
                 alignItems: 'center',
               }}
             >
-              <span>参数微调</span>
+              <span><><SlidersOutlined /> 参数微调</></span>
               <Tooltip title='重置语速和音量到默认值'>
                 <UndoOutlined
                   className='voice-design-reset-icon'

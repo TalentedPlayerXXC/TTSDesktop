@@ -1,361 +1,234 @@
-import { useEffect, useRef, useState, Fragment } from 'react'
-import { Button, Input, Form, Upload, message, Select, Slider } from 'antd'
-import { UploadOutlined } from '@ant-design/icons'
-// import WaveSurfer from 'wavesurfer.js'
-// import WavesurferPlayer from '@wavesurfer/react'
-import { getTTS, getFileLink, getModels, getSpks, getEmotionList, qwen } from '../services/index'
+import { useEffect, useState } from 'react'
+import { Button, Input, Upload, message, Select, Slider } from 'antd'
+import {
+  UploadOutlined,
+  PlayCircleOutlined,
+  CloseCircleFilled,
+  SoundOutlined,
+  FileTextOutlined,
+  SettingOutlined,
+  AudioOutlined,
+} from '@ant-design/icons'
+import IconClone from '../components/IconClone'
+import { qwen } from '../services/index'
 import './index.css'
 
+const { TextArea } = Input
+
 function TTSComponentBeta() {
-    const [messageApi, contextHolder] = message.useMessage();
-    const [audioUrl, setAudioUrl] = useState<string>('')
-    const [fileLink, setFileLink] = useState<string>('')
-    const [textValue, setTextValue] = useState<string>('')
-    const [loading, setLoading] = useState<boolean>(false)
-    // const [data, setData] = useState([])
-    const [audioFile, setAudioFile] = useState<File | null>(null)
-    const [isShow, setIshow] = useState<boolean>(true)
-    const [form] = Form.useForm()
-    const Item = Form.Item
-    const TextArea = Input.TextArea
-    const Option = Select.Option
+  const [messageApi, contextHolder] = message.useMessage()
+  const [audioUrl, setAudioUrl] = useState<string>('')
+  const [loading, setLoading] = useState(false)
+  const [audioFile, setAudioFile] = useState<File | null>(null)
+  const [isShow, setIshow] = useState(true)
 
-    // const { wavesurfer, isPlaying, currentTime } = useWavesurfer({
-    //   container: containerRef,
-    //   height: 100,
-    //   waveColor: 'rgb(200, 0, 200)',
-    //   progressColor: 'rgb(100, 0, 100)',
-    //   url: audioUrl,
-    //   // plugins: useMemo(() => [Timeline.create()], []),
-    // })
+  const [text, setText] = useState('')
+  const [textLang, setTextLang] = useState('zh')
+  const [textSplitMethod, setTextSplitMethod] = useState('cut0')
+  const [speedFactor, setSpeedFactor] = useState(1)
 
-    const formatter = (val: string) => `${val}`
-    // 初始化列表
-    useEffect(() => {
-        // 初始化模型列表
-        // getModels().then(res => {
-        //   console.log(res, '模型列表');
-        // })
+  useEffect(() => {
+  }, [])
 
-        // 初始化角色列表
-        // getEmotionList().then(res => { 
-        //   console.log(res, 'res');
-        // })
-        // getModels().then(res => {
-        //   // console.log(res, 'res');
-        //   if (res.status === 200 && res?.data && res.data.length > 0) {
-        //     getSpks(res.data[0]).then(list => {
-        //       console.log(list, 'list');
-        //     })
-        //   }
-
-        // })
-        // getSpks().then(res => {
-        //   console.log(res, 'res');
-        // })
-
-    }, [])
-
-
-    const onFinish = (e: any) => {
-        // localStorage.removeItem('audioData')
-        console.log(e, 'event')
-        // 测试需注释，测完记得解
-        setLoading(true)
-        const reader = new FileReader()
-        reader.readAsDataURL(e.upload[0]?.file)
-        reader.onload = () => {
-            // localStorage.setItem('audioData', reader.result)
-            delete e.upload
-            const data = {
-                ref_audio_path: fileLink,
-                // ref_audio_path: '',
-                text: e?.text,
-                text_lang: e?.text_lang,
-                prompt_text: e?.prompt_text,
-                prompt_lang: e?.prompt_lang
-            }
-
-            // 获取
-            // getTTS(data).then(res => {
-            //     console.log(res, 'res');
-            //     if (res.status === 200 && res?.data) {
-            //         const source = URL.createObjectURL(res.data)
-            //         setAudioUrl(source)
-            //         setLoading(false)
-            //     }
-            // })
-            const formData = new FormData()
-            formData.append('ref_audio',audioFile)
-            formData.append('text', '12345，上山打老虎，老虎没打到，...');
-            formData.append('ref_text', '为了他的命，也为了我们自己，得想...');
-            formData.append('rate', '1.0');
-
-            qwen(formData).then(res => {
-                console.log(res, 'res');
-                if (res.status === 200 && res?.data) {
-                    const source = URL.createObjectURL(res.data)
-                    setAudioUrl(source)
-                    setLoading(false)
-                }
-            })
-
-        }
+  const handleFileChange = (info: any) => {
+    const file = info.file
+    if (!file) {
+      setAudioFile(null)
+      setIshow(true)
+      return
     }
-    const normFile = (e: any) => {
-        if (Array.isArray(e)) {
-            return e;
-        }
-        console.log('Upload event:', e);
+    const isAudio = file.type?.includes('audio/')
+    if (!isAudio) {
+      messageApi.error('仅支持上传音频文件（如MP3/WAV等）')
+      return
+    }
+    setAudioFile(file)
+    setIshow(false)
 
-        if (e?.fileList.length <= 0) {
+    const reader = new FileReader()
+    reader.readAsDataURL(file)
+    localStorage.removeItem('audioData')
+    reader.onload = () => {
+      localStorage.setItem('audioData', reader.result as string)
+    }
+  }
 
-            // 如果为空那么就清空波形
-            // document.getElementById('uploadAudio')!.innerHTML = ''
-            return [];
-        }
-        if (
-            !e?.fileList[0]?.name.includes('wav') &&
-            !e?.fileList[0]?.name.includes('WAV') &&
-            !e?.fileList[0]?.name.includes('mp3')
-        ) return null;
+  const handleSynthesize = () => {
+    if (!text.trim()) {
+      messageApi.warning('请输入配音文本')
+      return
+    }
+    if (!audioFile) {
+      messageApi.warning('请上传参考音频文件')
+      return
+    }
 
-        const reader = new FileReader()
-        setAudioFile(e.file)
-        console.log('数据：', e);
+    setLoading(true)
 
-        // waveSurferCreate(e.file, '#uploadAudio')
-        reader.readAsDataURL(e.file)
-        localStorage.removeItem('audioData') //先清后加 防获取本地存储老数据
-        reader.onload = () => {
-            localStorage.setItem('audioData', reader.result as string)
-            const ref_audio_path: any = localStorage.getItem('audioData')
-            // getFileLink({ file: ref_audio_path, isBase64: true, fileName: e?.fileList[0]?.name || '测试' }).then(res => {
-            //     console.log(res, 'res');
-            //     if (res.status === 200 && res.data) {
-            //         setFileLink(res.data?.filePath)
-            //     }
-            // })
-        }
-        if (e?.fileList && e.fileList.length > 0 && e.file) {
-            e.fileList[0].file = e?.file
-        }
+    const formData = new FormData()
+    formData.append('ref_audio', audioFile)
+    formData.append('text', text)
+    formData.append('ref_text', text)
+    formData.append('rate', String(speedFactor))
+    formData.append('text_lang', textLang)
+    formData.append('text_split_method', textSplitMethod)
 
-        return e?.fileList;
-    };
+    qwen(formData).then(res => {
+      console.log(res, 'res')
+      if (res.status === 200 && res?.data) {
+        const source = URL.createObjectURL(res.data)
+        setAudioUrl(source)
+      } else {
+        messageApi.error('合成失败，请稍后重试')
+      }
+      setLoading(false)
+    }).catch(() => {
+      messageApi.error('请求失败，请检查服务是否启动')
+      setLoading(false)
+    })
+  }
 
-    const getSource = (file: File) => {
-        const isAudio = file.type.includes('audio/');
-        if (!isAudio) {
-            messageApi.open({
-                type: 'error',
-                content: '仅支持上传音频文件（如MP3/WAV等）',
-            });
-            return false;
-        }
+  return (
+    <div className='tts-beta'>
+      {contextHolder}
+      <div className='tts-beta-header'>
+        <h2 className='tts-beta-title'>
+          <IconClone /> 一句话克隆
+        </h2>
+        <p className='tts-beta-subtitle'>上传参考音频，输入目标文本，快速克隆声音</p>
+      </div>
 
-        return false;
+      <div className='tts-beta-body'>
+        <div className='tts-beta-controls'>
+          <div className='tts-beta-section'>
+            <div className='tts-beta-section-title'><><FileTextOutlined /> 配音文本</></div>
+            <TextArea
+              className='tts-beta-text-input'
+              placeholder='请输入需要配音的文本内容...'
+              value={text}
+              onChange={e => setText(e.target.value)}
+              maxLength={300}
+              autoSize={{ minRows: 6, maxRows: 10 }}
+            />
+            <div className='tts-beta-text-footer'>{text.length} / 300</div>
+          </div>
 
-    };
+          <div className='tts-beta-section'>
+            <div className='tts-beta-section-title'><><SettingOutlined /> 参数设置</></div>
 
-    // const waveSurferCreate = (source: File, key: string) => {
-    //   const waveSurfer = WaveSurfer.create({
-    //     container: key,
-    //     waveColor: 'rgba(252, 221, 20, 1)',
-    //     progressColor: 'rgba(34, 31, 28, 0.8)',
-    //     url: source ? URL.createObjectURL(source) : '',
-    //     // url: '',
-    //     // 显示默认的媒体控件 用传入的音频作为显隐条件
-    //     mediaControls: !!source,
+            <div className='tts-beta-param-row'>
+              <span className='tts-beta-param-label'>输出文本语言</span>
+              <div className='tts-beta-param-control'>
+                <Select
+                  value={textLang}
+                  onChange={setTextLang}
+                  style={{ width: '100%' }}
+                >
+                  <Select.Option value="zh">中文</Select.Option>
+                  <Select.Option value="en">英文</Select.Option>
+                </Select>
+              </div>
+            </div>
 
-    //   })
-    //   waveSurfer.on('click', () => {
-    //     waveSurfer.play()
-    //   })
-    // }
+            <div className='tts-beta-param-row'>
+              <span className='tts-beta-param-label'>文本切割方式</span>
+              <div className='tts-beta-param-control'>
+                <Select
+                  value={textSplitMethod}
+                  onChange={setTextSplitMethod}
+                  style={{ width: '100%' }}
+                >
+                  <Select.Option value="cut0">不切</Select.Option>
+                  <Select.Option value="cut1">凑四句一切</Select.Option>
+                  <Select.Option value="cut2">50字一切</Select.Option>
+                  <Select.Option value="cut3">按中文。切</Select.Option>
+                  <Select.Option value="cut4">按英文.切</Select.Option>
+                  <Select.Option value="cut5">按标点符号切</Select.Option>
+                </Select>
+              </div>
+            </div>
 
-
-    return (
-        <div className='tts-componentBeta'>
-            {contextHolder}
-            {/* <WavesurferPlayer
-                url={audioUrl}
-                height={100}
-                waveColor="violet"
-            /> */}
-
-            <Form
-                form={form}
-                name="voice"
-                className='formstyle'
-                onFinish={onFinish}
-                autoComplete="off"
-            >
-                <div style={{ width: '45%', minWidth: 350 }}>
-                    <Item label={null}
-                        name="text"
-                        rules={[{ required: true, message: '请输入输出文本' }]}
-                    >
-                        <TextArea
-                            className='textArea'
-                            placeholder='请输入配音文字'
-                            style={{
-                                resize: 'none',
-                                width: '90%',
-                                height: 400,
-                                paddingLeft: 10,
-                                paddingTop: 10
-                            }}
-                            autoSize={false}
-                        />
-                    </Item>
-                </div>
-                <div style={{ width: '45%', minWidth: 400 }}>
-                    {/* 模型切换 */}
-                    {/* <div className='model-select'>
-          <Item label={null} />
-          <Item
-            label="模型选择"
-            name="model"
-            initialValue={'gpt-sovts-v2'}
-            rules={[{ required: true, message: '请选择模型' }]}
-          >
-            <Select style={{ width: 200 }}>
-              <Option value="gpt-sovts-v2">gpt-sovts-v2</Option>
-              <Option value="gpt-sovts">gpt-sovts</Option>
-              <Option value="gpt-sovts-v3">gpt-sovts-v3</Option>
-            </Select>
-          </Item>
-          <Item
-            label="模型选择"
-            name="model"
-            initialValue={'gpt-sovts-v2'}
-            rules={[{ required: true, message: '请选择模型' }]}
-          >
-            <Select style={{ width: 200 }}>
-              <Option value="gpt-sovts-v2">gpt-sovts-v2</Option>
-              <Option value="gpt-sovts">gpt-sovts</Option>
-              <Option value="gpt-sovts-v3">gpt-sovts-v3</Option>
-            </Select>
-          </Item>
-        </div> */}
-                    {/* 上传 */}
-                    <Item
-                        name="upload"
-                        label={null}
-                        valuePropName="fileList"
-                        getValueFromEvent={normFile}
-                        extra="提示：仅支持MP3/WAV等音频格式"
-                        rules={[
-                            {
-                                required: true,
-                                message: '请上传参考音频文件',
-                            },
-                            () => ({
-                                validator(_, value) {
-                                    // console.log(value, 'value');
-                                    if (value && value[0]?.originFileObj) {
-                                        setIshow(false)
-                                        const isAudio = value[0].originFileObj.type.includes('audio/');
-                                        if (isAudio) {
-                                            return Promise.resolve();
-                                        }
-                                    }
-                                    setIshow(true)
-                                    return Promise.reject(new Error('仅支持上传音频文件（如MP3/WAV等）'));
-                                },
-                            }),
-                        ]}
-                    >
-                        <Upload
-                            name="audioUrl"
-                            maxCount={1}
-                            accept='audio/*'
-                            beforeUpload={(e) => getSource(e)}
-                        >
-                            {isShow && <Button icon={<UploadOutlined />}>请上传参考音频文件</Button>}
-                        </Upload>
-                    </Item>
-                    {/* 参考文案 */}
-                    {/* <Item label="参考文本" name="prompt_text">
-          <TextArea />
-        </Item> */}
-                    {/* 参考音频语言 */}
-                    {/* <Item
-          label="参考音频语言"
-          name="prompt_lang"
-          rules={[{ required: true, message: '请选择音频语言' }]}>
-          <Select>
-            <Option value="zh">中文</Option>
-            <Option value="en">英文</Option>
-          </Select>
-        </Item> */}
-                    {/* 输出文本◊ */}
-
-                    {/* 输出文本语言 */}
-                    <Item
-                        label="输出文本语言"
-                        name="text_lang"
-                        style={{ width: 240 }}
-                        initialValue='zh'
-                        rules={[{ required: true, message: '请选择音频语言' }]}>
-                        <Select>
-                            <Option value="zh">中文</Option>
-                            <Option value="en">英文</Option>
-                        </Select>
-                    </Item>
-                    {/* 文本切割方式 */}
-                    <Item
-                        label="文本切割方式"
-                        name="text_split_method"
-                        initialValue={'cut0'}
-                        style={{ width: 240 }}
-                        rules={[{ required: true, message: '请选择文本切割方式' }]}>
-                        <Select>
-                            <Option value="cut0">不切</Option>
-                            <Option value="cut1">凑四句一切</Option>
-                            <Option value="cut2">50字一切</Option>
-                            <Option value="cut3">按中文。切</Option>
-                            <Option value="cut4">按英文.切</Option>
-                            <Option value="cut5">按标点符号切</Option>
-                        </Select>
-                    </Item>
-                    {/* 语速 */}
-                    <Item
-                        label="语速"
-                        name="speed_factor"
-                        initialValue={1}
-                    >
-                        <Slider
-                            style={{ width: 300 }}
-                            tooltip={{ formatter }}
-                            // range={{ editable: true, }}
-                            max={2}
-                            min={0.1}
-                            step={0.1}
-                            marks={
-                                { 0.1: '0.1x', 0.5: '0.5x', 1: '1x', 1.5: '1.5x', 2: '2x' }
-                            }
-                        />
-                    </Item>
-                    <div>
-                        <Item label={null} style={{ alignItems: 'center' }}>
-                            <Button type="primary" htmlType="submit" loading={loading} disabled={!!loading}>
-                                合成语音
-                            </Button>
-                        </Item>
-                    </div>
-                </div>
-            </Form>
-            <>
-                {
-                    audioUrl ?
-                        <audio src={audioUrl} controls /> : null
-                }
-                <div id='wave'></div>
-            </>
+            <div className='tts-beta-param-row'>
+              <span className='tts-beta-param-label'>语速</span>
+              <div className='tts-beta-param-control'>
+                <Slider
+                  min={0.1}
+                  max={2}
+                  step={0.1}
+                  value={speedFactor}
+                  onChange={setSpeedFactor}
+                  marks={{ 0.1: '0.1x', 0.5: '0.5x', 1: '1x', 1.5: '1.5x', 2: '2x' }}
+                  tooltip={{ formatter: (val?: number) => `${val}x` }}
+                />
+              </div>
+            </div>
+          </div>
         </div>
-    )
+
+        <div className='tts-beta-preview'>
+          <div className='tts-beta-section'>
+            <div className='tts-beta-section-title'><><AudioOutlined /> 参考音频</></div>
+            <Upload
+              name="audioUrl"
+              maxCount={1}
+              accept="audio/*"
+              showUploadList={false}
+              beforeUpload={() => false}
+              onChange={handleFileChange}
+            >
+              <div className={`tts-beta-upload-area${audioFile ? ' uploaded' : ''}`}>
+                {audioFile && (
+                  <CloseCircleFilled
+                    className='tts-beta-upload-remove'
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setAudioFile(null)
+                      setIshow(true)
+                    }}
+                  />
+                )}
+                {audioFile ? (
+                  <div className='tts-beta-upload-file'>{audioFile.name}</div>
+                ) : (
+                  <>
+                    <div className='tts-beta-upload-icon'>
+                      <UploadOutlined />
+                    </div>
+                    <div className='tts-beta-upload-text'>点击或拖拽上传参考音频</div>
+                  </>
+                )}
+                <div className='tts-beta-upload-hint'>仅支持 MP3 / WAV 音频格式</div>
+              </div>
+            </Upload>
+          </div>
+
+          <div className='tts-beta-actions'>
+            <Button
+              type='primary'
+              size='large'
+              icon={<PlayCircleOutlined />}
+              onClick={handleSynthesize}
+              loading={loading}
+              className='tts-beta-btn-primary'
+            >
+              合成语音
+            </Button>
+          </div>
+
+          <div className='tts-beta-preview-center'>
+            {audioUrl ? (
+              <audio src={audioUrl} controls className='tts-beta-audio' />
+            ) : (
+              <div className='tts-beta-preview-placeholder'>
+                <SoundOutlined className='tts-beta-preview-icon' />
+                <p>合成后音频将在此处播放</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
 }
 
 export default TTSComponentBeta

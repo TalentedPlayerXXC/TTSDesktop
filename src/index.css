@@ -8,12 +8,10 @@ body {
   height: 100vh;
 }
 html, body, #root {
-    /* width: 100%; */
-    /* height: 100%; */
     margin: 0;
     background-color: var(--background-color);
     color: #4A4A48;
-
+    user-select: none;
 }
 #root {
   /* width: 100%; */

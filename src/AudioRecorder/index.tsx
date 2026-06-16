@@ -12,10 +12,10 @@ function AudioRecorder(props: any) {
     }
     return (
         <div>
-            <Button icon={<AudioFilled />}>录音</Button>
-            <Button icon={<PlayCircleFilled />} onClick={audioplay}>播放</Button>
+            <Button icon={<AudioFilled style={{ color: '#7c3aed' }} />}>录音</Button>
+            <Button icon={<PlayCircleFilled style={{ color: '#7c3aed' }} />} onClick={audioplay}>播放</Button>
             <Button danger onClick={audiostop}>停止</Button>
-            <Button icon={<UploadOutlined />}>上传参考音频</Button>
+            <Button icon={<UploadOutlined style={{ color: '#7c3aed' }} />}>上传参考音频</Button>
         </div>
     )
 }

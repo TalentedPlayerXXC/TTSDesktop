@@ -1,68 +1,71 @@
-import { useEffect, useState } from 'react'
-import { Menu, } from 'antd'
-import { createFromIconfontCN } from '@ant-design/icons'
-// import WavesurferPlayer from '@wavesurfer/react'
+import { useEffect } from 'react';
+import { Menu } from 'antd';
 import { useLocation, useNavigate } from 'react-router';
-import LoginComp from './LoginComp'
-import './App.css'
+import LoginComp from './LoginComp';
+import IconTTSStatic from './components/IconTTSStatic';
+import IconCloneStatic from './components/IconCloneStatic';
+import IconDesignStatic from './components/IconDesignStatic';
+import Mascot from './components/Mascot';
+import SidebarMenu from './components/SidebarMenu';
+import './App.css';
 import Routers from './routes';
-const IconFont = createFromIconfontCN({
-  scriptUrl: '//at.alicdn.com/t/c/font_5168870_xxax0x7wlm8.js', // 在 iconfont.cn 上生成
-});
+
 const items = [
   {
     key: '/tts',
-    label: "配音",
-    icon: <IconFont type="icon-shengyin" />
+    label: '配音',
+    // icon: <IconTTSStatic />,
   },
   {
     key: '/tts-beta',
-    label: "一句话克隆(beta)",
-    icon: <IconFont type="icon-ceshi" />
+    label: '一句话克隆(beta)',
+    // icon: <IconCloneStatic />,
   },
   {
     key: '/voice-design',
-    label: "声音设计(beta)",
-    icon: <IconFont type="icon-shengyinsheji" />
+    label: '声音设计(beta)',
+    // icon: <IconDesignStatic />,
+  },
+  {
+    key: '/settings',
+    label: '设置',
   },
 ];
+
 function App() {
   const navigate = useNavigate();
-  // const [messageApi, contextHolder] = message.useMessage();
   const { pathname } = useLocation();
-  const [path, setPath] = useState(pathname || '/tts');
-  const changePath = (e: { key: string }) => {
-    // console.log(e, 'e');
-    navigate(e.key || '/tts')
-    setPath(e.key || '/tts');
-  }
+
+  const selectedKey = items.some((item) => item.key === pathname)
+    ? pathname
+    : '/tts';
 
   useEffect(() => {
-    // 获取pathname判断是否为乱输的路径，如果是则跳转到默认路径
-    if (!items.find(item => item.key === pathname)) {
+    if (!items.find((item) => item.key === pathname)) {
       navigate('/tts');
-      setPath('/tts');
     }
-    // console.log('app useEffect');
-  }, [pathname, navigate])
+  }, [pathname, navigate]);
+
   return (
     <div className='app'>
-      {/* {contextHolder} */}
       <LoginComp />
-      <div style={{ width: "100%", display: 'flex', height: '100%',marginTop: '60px' }}>
-        <Menu
+          <SidebarMenu
+            currentPath={selectedKey}
+            onNavigate={navigate}
+          />
+      <div className='contentwrap'>
+        {/* <Menu
           className='menuclass'
-          // defaultOpenKeys={['tts']}
-          selectedKeys={[path]}
+          selectedKeys={[selectedKey]}
           mode="inline"
           items={items}
-          // theme='dark'
-          onClick={(e) => changePath(e)}
-        />
+          onClick={e => navigate(e.key)}
+        /> */}
         <Routers />
+        <Mascot />
       </div>
     </div>
-  )
+  );
 }
 
-export default App
+export default App;

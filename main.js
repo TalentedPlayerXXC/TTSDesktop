@@ -36,8 +36,7 @@ function stopServer() {
 
 function createWindow() {
   const win = new BrowserWindow({
-    // 不可调整大小，保持固定尺寸
-    // resizable: false,
+    title: '一个简单的配音工具',
     width: 1400,
     height: 900,
     maxWidth: 1920,
@@ -55,6 +54,7 @@ function createWindow() {
     win.webContents.openDevTools(); // 打开开发者工具
   } else {
     win.loadFile(path.join(__dirname, 'dist', 'index.html'));
+    win.setMenu(null); // 生产环境去掉菜单栏
 
   }
 }
