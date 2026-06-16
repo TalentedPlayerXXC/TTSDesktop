@@ -1,3 +1,5 @@
+[中文](update.md) | [English](update_EN.md)
+
 # 更新日志
 
 ## 2025-06-17
