@@ -1,6 +1,6 @@
 [中文](readme.md) | [English](readme_EN.md)
 
-# QwenTTS Desktop
+# TTS Desktop
 
 基于 Electron + React 的桌面配音客户端，提供智能配音、声音克隆、声音设计三项核心功能。
 

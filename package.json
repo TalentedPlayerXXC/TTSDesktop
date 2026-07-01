@@ -1,7 +1,7 @@
 {
   "name": "qwentts-desktop",
   "version": "1.0.0",
-  "description": "QwenTTS Desktop App",
+  "description": "TTS Desktop",
   "main": "main.js",
   "scripts": {
     "dev": "vite --host",
@@ -27,8 +27,8 @@
     "vite": "^6.0.0"
   },
   "build": {
-    "appId": "com.qwentts.desktop",
-    "productName": "QwenTTSDesktop",
+    "appId": "com.tts.desktop",
+    "productName": "TTSDesktop",
     "directories": {
       "output": "release"
     },

@@ -1,6 +1,6 @@
 [中文](readme.md) | [English](readme_EN.md)
 
-# QwenTTS Desktop
+# TTS Desktop
 
 A desktop dubbing client built with Electron + React, offering three core capabilities: smart dubbing, voice cloning, and voice design.
 
