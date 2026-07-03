@@ -8,7 +8,7 @@
 
 A desktop dubbing client built with Electron + React — **Smart Dubbing · Voice Cloning · Voice Design** all in one.
 
-The author is a clueless frontend dev who writes code like spaghetti, but hey, it works (mostly). If you find a bug, congratulations — you've discovered a hidden feature.
+The author is a clueless frontend dev who writes code like spaghetti, but hey, it works (mostly). (Does it though? 👀) If you find a bug, congratulations — you've discovered a hidden feature.
 
 ## Features
 
@@ -44,4 +44,8 @@ Curious what the author broke this time? 👉 [UPDATE.md](./UPDATE.md)
 
 ## About the Author
 
-A frontend refugee forced to learn Electron by a pushy product manager. The code runs, that's good enough. Optimization? Never heard of her.
+A frontend chicken who got elbowed out of the team for slacking off and writing terrible code. Was deep in a keyframing session last year when a thought hit: "nobody watches my stupid animations anyway, might as well build a dubbing thing." So here we are. It works. Probably. Gradually improving? Yeah right (Arena Breakout: Infinite, launching! Delta Force, launching!).
+
+**Tech Credits:**
+- 🎨 Animations - Teacher Da D
+- 🧠 Core logic - Some unreliable guy (that's me)
