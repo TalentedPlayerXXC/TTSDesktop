@@ -1,0 +1,283 @@
+.errbound-overlay {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #08080f;
+  overflow: hidden;
+}
+
+.errbound-scanline {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 0, 68, 0.3),
+    rgba(255, 0, 68, 0.6),
+    rgba(255, 0, 68, 0.3),
+    transparent
+  );
+  animation: errbound-scan 3s linear infinite;
+  pointer-events: none;
+}
+
+.errbound-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255, 0, 68, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 0, 68, 0.03) 1px, transparent 1px);
+  background-size: 32px 32px;
+  pointer-events: none;
+}
+
+.errbound-card {
+  position: relative;
+  z-index: 1;
+  width: 520px;
+  max-width: 90%;
+}
+
+.errbound-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 28px;
+}
+
+.errbound-icon-ring {
+  position: relative;
+  width: 56px;
+  height: 56px;
+  flex-shrink: 0;
+}
+
+.errbound-ring {
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  border-top-color: #ff0044;
+  animation: errbound-ring-pulse 1.5s ease infinite;
+}
+
+.errbound-ring:nth-child(2) {
+  inset: -8px;
+  border-top-color: #ff6600;
+  animation-duration: 2s;
+  animation-delay: 0.3s;
+}
+
+.errbound-icon {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  color: #ff0044;
+  background: rgba(255, 0, 68, 0.08);
+  border-radius: 50%;
+  border: 1px solid rgba(255, 0, 68, 0.2);
+}
+
+.errbound-titles {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.errbound-title {
+  font-family: 'Courier New', monospace;
+  font-size: 22px;
+  font-weight: 700;
+  color: #ff0044;
+  letter-spacing: 3px;
+  margin: 0;
+  text-shadow: 0 0 12px rgba(255, 0, 68, 0.5), 0 0 30px rgba(255, 0, 68, 0.2);
+  animation: errbound-glitch 3s infinite;
+  position: relative;
+}
+
+.errbound-title::after {
+  content: attr(data-text);
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  color: #ff6600;
+  clip-path: polygon(0 30%, 100% 30%, 100% 33%, 0 33%);
+  animation: errbound-glitch-slice 3s infinite;
+}
+
+.errbound-subtitle {
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  color: #ff6600;
+  letter-spacing: 2px;
+  opacity: 0.8;
+}
+
+.errbound-terminal {
+  background: #050508;
+  border: 1px solid #1a1a2e;
+  border-left: 3px solid #ff0044;
+  border-radius: 4px;
+  padding: 18px 20px;
+  margin-bottom: 24px;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  line-height: 1.8;
+  color: #996666;
+  position: relative;
+  overflow: hidden;
+}
+
+.errbound-terminal::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 0, 68, 0.2), transparent);
+}
+
+.errbound-line {
+  display: flex;
+  gap: 8px;
+}
+
+.errbound-prompt {
+  color: #ff0044;
+  flex-shrink: 0;
+}
+
+.errbound-code {
+  color: #aa5555;
+  word-break: break-all;
+}
+
+.errbound-code .errbound-highlight {
+  color: #ff4466;
+}
+
+.errbound-stack {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed rgba(255, 0, 68, 0.1);
+  font-size: 11px;
+  color: #553333;
+  max-height: 120px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.errbound-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.errbound-btn-retry {
+  flex: 1;
+  padding: 12px 0;
+  background: transparent;
+  border: 1px solid #ff0044;
+  color: #ff0044;
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  letter-spacing: 2px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+
+.errbound-btn-retry::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 0, 68, 0.06);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.errbound-btn-retry:hover {
+  border-color: #ff3366;
+  color: #ff3366;
+  text-shadow: 0 0 8px rgba(255, 0, 68, 0.4);
+  box-shadow: 0 0 16px rgba(255, 0, 68, 0.1), inset 0 0 16px rgba(255, 0, 68, 0.05);
+}
+
+.errbound-btn-retry:hover::before {
+  opacity: 1;
+}
+
+.errbound-footer {
+  margin-top: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.errbound-status-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  background: #ff0044;
+  border-radius: 50%;
+  margin-right: 8px;
+  animation: errbound-dot-blink 0.8s infinite;
+}
+
+.errbound-status-text {
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+  color: #442222;
+  letter-spacing: 1px;
+}
+
+.errbound-timestamp {
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+  color: #333;
+  letter-spacing: 1px;
+}
+
+@keyframes errbound-scan {
+  0% { top: -2px; }
+  100% { top: 100%; }
+}
+
+@keyframes errbound-ring-pulse {
+  0%, 100% { transform: rotate(0deg); opacity: 0.7; }
+  50% { transform: rotate(180deg); opacity: 1; }
+}
+
+@keyframes errbound-glitch {
+  0%, 100% { transform: translate(0); }
+  96% { transform: translate(0); }
+  97% { transform: translate(-2px, 1px); }
+  98% { transform: translate(2px, -1px); }
+  99% { transform: translate(-1px, 0); }
+}
+
+@keyframes errbound-glitch-slice {
+  0%, 100% { clip-path: polygon(0 30%, 100% 30%, 100% 33%, 0 33%); }
+  20% { clip-path: polygon(0 70%, 100% 70%, 100% 74%, 0 74%); }
+  40% { clip-path: polygon(0 10%, 100% 10%, 100% 12%, 0 12%); }
+  60% { clip-path: polygon(0 50%, 100% 50%, 100% 53%, 0 53%); }
+  80% { clip-path: polygon(0 90%, 100% 90%, 100% 92%, 0 92%); }
+}
+
+@keyframes errbound-dot-blink {
+  0%, 100% { opacity: 1; box-shadow: 0 0 4px rgba(255, 0, 68, 0.6); }
+  50% { opacity: 0.3; box-shadow: 0 0 2px rgba(255, 0, 68, 0.2); }
+}

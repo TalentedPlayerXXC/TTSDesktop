@@ -1,62 +1,113 @@
-import { apis, files, qwens } from "./fetch_request"
+import { qwens } from './fetch_request'
+import type {
+  HealthResponse,
+  ModelStatusResponse,
+  ModelLoadRequest,
+  ModelLoadResponse,
+  ModelUnloadRequest,
+  ModelUnloadResponse,
+  CloneRequest,
+  CloneResponse,
+  BatchCloneRequest,
+  BatchCloneResponse,
+  DialogueRequest,
+  DialogueResponse,
+  VoxCloneRequest,
+  VoxCloneResponse,
+  VoxDesignRequest,
+  VoxDesignResponse,
+  STTRequest,
+  STTResponse,
+  FilesListResponse,
+} from './types'
 
-function getTTS({ ref_audio_path = '', text = '', prompt_text = '' }) {
-  return apis({
+const isElectron = navigator.userAgent.toLowerCase().includes('electron')
+const OUTPUT_BASE = isElectron ? 'http://localhost:8000' : '/qwen'
+
+export function getOutputUrl(audioUrl: string): string {
+  return `${OUTPUT_BASE}${audioUrl}`
+}
+
+export function getHealth() {
+  return qwens<HealthResponse>({ method: 'get', url: '/health' })
+}
+
+export function getModelStatus() {
+  return qwens<ModelStatusResponse>({ method: 'get', url: '/model/status' })
+}
+
+export function loadModel(data: ModelLoadRequest) {
+  return qwens<ModelLoadResponse>({ method: 'post', url: '/model/load', data })
+}
+
+export function unloadModel(data: ModelUnloadRequest) {
+  return qwens<ModelUnloadResponse>({ method: 'post', url: '/model/unload', data })
+}
+
+export async function ensureModelLoaded(model: 'tts' | 'voxcpm2'): Promise<boolean> {
+  try {
+    await unloadModel({ model })
+
+    const loadRes = await loadModel({ model })
+    return loadRes.data.success
+  } catch {
+    return false
+  }
+}
+
+export function clone(data: CloneRequest) {
+  return qwens<CloneResponse>({
     method: 'post',
-    url: '/tts',
+    url: '/clone',
     data: {
-      text,
-      text_lang: 'zh',
-      ref_audio_path: ref_audio_path || '',
-      prompt_lang: 'zh',
-      prompt_text,
-      text_split_method: 'cut5',
-      batch_size: 1,
-      media_type: 'wav',
-      streaming_mode: true,
-      speed_factor: 1,
+      ...data,
+      save_file: data.save_file ?? true,
     },
-    responseType: 'blob',
   })
 }
 
-function qwen(formData: FormData) {
-  return qwens({
+export function stt(data: STTRequest) {
+  return qwens<STTResponse>({ method: 'post', url: '/stt', data })
+}
+
+export function voxDesign(data: VoxDesignRequest) {
+  return qwens<VoxDesignResponse>({
     method: 'post',
-    url: '/voice-clone',
-    data: formData,
+    url: '/vox/design',
+    data: {
+      ...data,
+      save_file: data.save_file ?? true,
+    },
   })
 }
 
-function getModels() {
-  return fetch('/api/models', { method: 'get' }).then(r => r.json())
-}
-
-function getSpks(modelName: string) {
-  return fetch('/v2/spks', {
+export function voxClone(data: VoxCloneRequest) {
+  return qwens<VoxCloneResponse>({
     method: 'post',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ model: modelName }),
-  }).then(r => r.json())
-}
-
-function getFileLink({ fileName = '', isBase64 = false, file = '' }) {
-  return files({
-    method: 'post',
-    url: '/getFileLink',
-    data: { fileName, isBase64, file },
+    url: '/vox/clone',
+    data: {
+      ...data,
+      save_file: data.save_file ?? true,
+    },
   })
 }
 
-function getEmotionList() {
-  return fetch('/file/getEmotionList', { method: 'get' }).then(r => r.json())
+export function batchClone(data: BatchCloneRequest) {
+  return qwens<BatchCloneResponse>({
+    method: 'post',
+    url: '/batch-clone',
+    data,
+  })
 }
 
-export {
-  getTTS,
-  getFileLink,
-  getModels,
-  getSpks,
-  getEmotionList,
-  qwen,
+export function dialogue(data: DialogueRequest) {
+  return qwens<DialogueResponse>({
+    method: 'post',
+    url: '/dialogue',
+    data,
+  })
+}
+
+export function getFilesList(limit = 100, offset = 0) {
+  return qwens<FilesListResponse>({ method: 'get', url: `/files?limit=${limit}&offset=${offset}` })
 }

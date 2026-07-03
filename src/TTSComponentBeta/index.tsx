@@ -1,16 +1,16 @@
-import { useEffect, useState } from 'react'
-import { Button, Input, Upload, message, Select, Slider } from 'antd'
+import { useState } from 'react'
+import { Button, Input, Upload, message } from 'antd'
 import {
   UploadOutlined,
   PlayCircleOutlined,
   CloseCircleFilled,
   SoundOutlined,
   FileTextOutlined,
-  SettingOutlined,
   AudioOutlined,
 } from '@ant-design/icons'
 import IconClone from '../components/IconClone'
-import { qwen } from '../services/index'
+import CyberpunkLoading from '../components/CyberpunkLoading'
+import { clone, ensureModelLoaded, getOutputUrl } from '../services/index'
 import './index.css'
 
 const { TextArea } = Input
@@ -19,22 +19,16 @@ function TTSComponentBeta() {
   const [messageApi, contextHolder] = message.useMessage()
   const [audioUrl, setAudioUrl] = useState<string>('')
   const [loading, setLoading] = useState(false)
+  const [loadingMessage, setLoadingMessage] = useState('')
   const [audioFile, setAudioFile] = useState<File | null>(null)
-  const [isShow, setIshow] = useState(true)
-
+  const [audioPath, setAudioPath] = useState<string>('')
   const [text, setText] = useState('')
-  const [textLang, setTextLang] = useState('zh')
-  const [textSplitMethod, setTextSplitMethod] = useState('cut0')
-  const [speedFactor, setSpeedFactor] = useState(1)
-
-  useEffect(() => {
-  }, [])
 
   const handleFileChange = (info: any) => {
     const file = info.file
     if (!file) {
       setAudioFile(null)
-      setIshow(true)
+      setAudioPath('')
       return
     }
     const isAudio = file.type?.includes('audio/')
@@ -43,49 +37,49 @@ function TTSComponentBeta() {
       return
     }
     setAudioFile(file)
-    setIshow(false)
-
-    const reader = new FileReader()
-    reader.readAsDataURL(file)
-    localStorage.removeItem('audioData')
-    reader.onload = () => {
-      localStorage.setItem('audioData', reader.result as string)
-    }
+    const path = file.originFileObj?.path || ''
+    setAudioPath(path)
   }
 
-  const handleSynthesize = () => {
+  const handleSynthesize = async () => {
     if (!text.trim()) {
       messageApi.warning('请输入配音文本')
       return
     }
-    if (!audioFile) {
+    if (!audioPath) {
       messageApi.warning('请上传参考音频文件')
       return
     }
 
     setLoading(true)
+    setLoadingMessage('正在加载 Qwen3 TTS 模型...')
 
-    const formData = new FormData()
-    formData.append('ref_audio', audioFile)
-    formData.append('text', text)
-    formData.append('ref_text', text)
-    formData.append('rate', String(speedFactor))
-    formData.append('text_lang', textLang)
-    formData.append('text_split_method', textSplitMethod)
+    try {
+      const ok = await ensureModelLoaded('tts')
+      if (!ok) {
+        messageApi.error('模型加载失败，请稍后重试')
+        setLoading(false)
+        return
+      }
 
-    qwen(formData).then(res => {
-      console.log(res, 'res')
-      if (res.status === 200 && res?.data) {
-        const source = URL.createObjectURL(res.data)
-        setAudioUrl(source)
+      setLoadingMessage('正在合成语音...')
+
+      const res = await clone({
+        text: text.trim(),
+        ref_audio: audioPath,
+      })
+
+      if (res.status === 200 && res.data?.success) {
+        const fullUrl = getOutputUrl(res.data.audio_url)
+        setAudioUrl(fullUrl)
+        messageApi.success('合成完成')
       } else {
         messageApi.error('合成失败，请稍后重试')
       }
-      setLoading(false)
-    }).catch(() => {
+    } catch {
       messageApi.error('请求失败，请检查服务是否启动')
-      setLoading(false)
-    })
+    }
+    setLoading(false)
   }
 
   return (
@@ -107,61 +101,10 @@ function TTSComponentBeta() {
               placeholder='请输入需要配音的文本内容...'
               value={text}
               onChange={e => setText(e.target.value)}
-              maxLength={300}
+              maxLength={5000}
               autoSize={{ minRows: 6, maxRows: 10 }}
             />
-            <div className='tts-beta-text-footer'>{text.length} / 300</div>
-          </div>
-
-          <div className='tts-beta-section'>
-            <div className='tts-beta-section-title'><><SettingOutlined /> 参数设置</></div>
-
-            <div className='tts-beta-param-row'>
-              <span className='tts-beta-param-label'>输出文本语言</span>
-              <div className='tts-beta-param-control'>
-                <Select
-                  value={textLang}
-                  onChange={setTextLang}
-                  style={{ width: '100%' }}
-                >
-                  <Select.Option value="zh">中文</Select.Option>
-                  <Select.Option value="en">英文</Select.Option>
-                </Select>
-              </div>
-            </div>
-
-            <div className='tts-beta-param-row'>
-              <span className='tts-beta-param-label'>文本切割方式</span>
-              <div className='tts-beta-param-control'>
-                <Select
-                  value={textSplitMethod}
-                  onChange={setTextSplitMethod}
-                  style={{ width: '100%' }}
-                >
-                  <Select.Option value="cut0">不切</Select.Option>
-                  <Select.Option value="cut1">凑四句一切</Select.Option>
-                  <Select.Option value="cut2">50字一切</Select.Option>
-                  <Select.Option value="cut3">按中文。切</Select.Option>
-                  <Select.Option value="cut4">按英文.切</Select.Option>
-                  <Select.Option value="cut5">按标点符号切</Select.Option>
-                </Select>
-              </div>
-            </div>
-
-            <div className='tts-beta-param-row'>
-              <span className='tts-beta-param-label'>语速</span>
-              <div className='tts-beta-param-control'>
-                <Slider
-                  min={0.1}
-                  max={2}
-                  step={0.1}
-                  value={speedFactor}
-                  onChange={setSpeedFactor}
-                  marks={{ 0.1: '0.1x', 0.5: '0.5x', 1: '1x', 1.5: '1.5x', 2: '2x' }}
-                  tooltip={{ formatter: (val?: number) => `${val}x` }}
-                />
-              </div>
-            </div>
+            <div className='tts-beta-text-footer'>{text.length} / 5000</div>
           </div>
         </div>
 
@@ -169,7 +112,7 @@ function TTSComponentBeta() {
           <div className='tts-beta-section'>
             <div className='tts-beta-section-title'><><AudioOutlined /> 参考音频</></div>
             <Upload
-              name="audioUrl"
+              name="audio"
               maxCount={1}
               accept="audio/*"
               showUploadList={false}
@@ -183,7 +126,7 @@ function TTSComponentBeta() {
                     onClick={(e) => {
                       e.stopPropagation()
                       setAudioFile(null)
-                      setIshow(true)
+                      setAudioPath('')
                     }}
                   />
                 )}
@@ -227,6 +170,12 @@ function TTSComponentBeta() {
           </div>
         </div>
       </div>
+
+      <CyberpunkLoading
+        visible={loading}
+        message={loadingMessage}
+        modelName='Qwen3 TTS'
+      />
     </div>
   )
 }

@@ -292,7 +292,7 @@ function Mascot() {
   }, [menuOpen]);
   const handleGitHub = useCallback(() => {
     window.open(
-      'https://github.com/TalentedPlayerXXC/QwenTTSDesktop/issues',
+      'https://github.com/TalentedPlayerXXC/TTSDesktop/issues',
       '_blank',
     );
     setMenuOpen(false);
@@ -391,6 +391,7 @@ function Mascot() {
             placeholder='请描述问题的详细信息'
             value={bugDesc}
             onChange={(e) => setBugDesc(e.target.value)}
+             autoSize={{ minRows: 5, maxRows: 5 }}
           />
         </div>
       </Modal>
