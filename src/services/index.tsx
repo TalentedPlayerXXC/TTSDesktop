@@ -1,145 +1,148 @@
-import { apis,files,qwens } from "./request";
-import axios from "axios"
+import { qwens } from './request'
+import type {
+  HealthResponse,
+  ModelStatusResponse,
+  ModelLoadRequest,
+  ModelLoadResponse,
+  ModelUnloadRequest,
+  ModelUnloadResponse,
+  CloneRequest,
+  CloneResponse,
+  BatchCloneRequest,
+  BatchCloneResponse,
+  DialogueRequest,
+  DialogueResponse,
+  VoxCloneRequest,
+  VoxCloneResponse,
+  VoxDesignRequest,
+  VoxDesignResponse,
+  STTRequest,
+  STTResponse,
+  FilesListResponse,
+} from './types'
 
-function getTTS({ ref_audio_path = '', text = '', prompt_text = '' }) {
-// function getTTS(data:any) {
-    return apis({
-        method: 'post',
-        url: '/tts',
-        data: {
-            // ...data,
-            text,
-            text_lang: 'zh',
-            // ref_audio_path: '/Users/mac/Downloads/鸣潮/reference_audios/emotions/漂泊者_男/中文/【开心_happy】开一次空间隧道会耗费你大量算力……黑海岸还需要你维持运转。.wav',
-            ref_audio_path: ref_audio_path || '',
-            prompt_lang: 'zh',
-            prompt_text,
-            text_split_method: 'cut5', //文本切割方式
-            batch_size: 1,
-            media_type: 'wav',
-            streaming_mode: true,
-            speed_factor: 1 // 语速
-        },
+const isElectron = navigator.userAgent.toLowerCase().includes('electron')
+const OUTPUT_BASE = isElectron ? 'http://localhost:8000' : '/qwen'
 
-        // responseType: 'arraybuffer' // 设置响应类型为 ArrayBuffer
-        responseType: 'blob'
-    })
-    // return axios({
-    //     method: 'post',
-    //     url: '/api/tts',
-    //     data: {
-    //         // ...data,
-    //         text,
-    //         text_lang: 'zh',
-    //         // ref_audio_path: '/Users/mac/Downloads/鸣潮/reference_audios/emotions/漂泊者_男/中文/【开心_happy】开一次空间隧道会耗费你大量算力……黑海岸还需要你维持运转。.wav',
-    //         ref_audio_path: ref_audio_path || '',
-    //         prompt_lang: 'zh',
-    //         prompt_text,
-    //         text_split_method: 'cut5', //文本切割方式
-    //         batch_size: 1,
-    //         media_type: 'wav',
-    //         streaming_mode: true,
-    //         speed_factor: 1 // 语速
-    //     },
-
-    //     // responseType: 'arraybuffer' // 设置响应类型为 ArrayBuffer
-    //     responseType: 'blob'
-    // })
-}
-function qwen(formData:any) {
-// function getTTS(data:any) {
-    return qwens({
-        method: 'post',
-        url: '/voice-clone',
-        // data: {
-        //     // ...data,
-        //     text: '12345，上山打老虎，老虎没打到，打到小松鼠。',
-        //     ref_audio_path: '/Users/coderxu/Downloads/【默认】为了他的命，也为了我们自己，得想办法把他抓回来，免得更麻烦。.wav',
-        //     // ref_audio_path: ref_audio_path || '',
-        //     ref_text:'为了他的命，也为了我们自己，得想办法把他抓回来，免得更麻烦。',
-        //     rate:'1.0',
-        // },
-
-        // // responseType: 'arraybuffer' // 设置响应类型为 ArrayBuffer
-        // responseType: 'blob'
-        data:formData
-    })
-    // return axios({
-    //     method: 'post',
-    //     url: '/api/tts',
-    //     data: {
-    //         // ...data,
-    //         text,
-    //         text_lang: 'zh',
-    //         // ref_audio_path: '/Users/mac/Downloads/鸣潮/reference_audios/emotions/漂泊者_男/中文/【开心_happy】开一次空间隧道会耗费你大量算力……黑海岸还需要你维持运转。.wav',
-    //         ref_audio_path: ref_audio_path || '',
-    //         prompt_lang: 'zh',
-    //         prompt_text,
-    //         text_split_method: 'cut5', //文本切割方式
-    //         batch_size: 1,
-    //         media_type: 'wav',
-    //         streaming_mode: true,
-    //         speed_factor: 1 // 语速
-    //     },
-
-    //     // responseType: 'arraybuffer' // 设置响应类型为 ArrayBuffer
-    //     responseType: 'blob'
-    // })
+// 获取音频输出地址
+export function getOutputUrl(audioUrl: string): string {
+  return `${OUTPUT_BASE}${audioUrl}`
 }
 
-// 获取模型列表
-function getModels() {
-    return axios({
-        method: 'get',
-        url: '/api/models',
-    })
-}
-// 获取模型角色列表
-function getSpks(modelName: string) {
-    return axios({
-        method: 'post',
-        url: '/v2/spks',
-        data: {
-            model: modelName
-        }
-    })
-}
-// 获取文件地址
-function getFileLink({ fileName = '', isBase64 = false, file = '' }) {
-    return files({
-        method: 'post',
-        url: '/getFileLink',
-        data: {
-            fileName,
-            isBase64,
-            file
-        }
-    })
-    // return axios({
-    //     method: 'post',
-    //     url: '/file/getFileLink',
-    //     data: {
-    //         fileName,
-    //         isBase64,
-    //         file
-    //     }
-    // })
+// 健康检查
+export function getHealth() {
+  return qwens<HealthResponse>({
+    method: 'get',
+    url: '/health',
+  })
 }
 
-// 获取文件列表
-
-function getEmotionList() {
-    return axios({
-        method: 'get',
-        url: '/file/getEmotionList'
-    })
+// 模型状态
+export function getModelStatus() {
+  return qwens<ModelStatusResponse>({
+    method: 'get',
+    url: '/model/status',
+  })
 }
 
-export {
-    getTTS,
-    getFileLink,
-    getModels,
-    getSpks,
-    getEmotionList,
-    qwen
-}   
+// 加载模型
+export function loadModel(data: ModelLoadRequest) {
+  return qwens<ModelLoadResponse>({
+    method: 'post',
+    url: '/model/load',
+    data,
+  })
+}
+
+// 卸载模型
+export function unloadModel(data: ModelUnloadRequest) {
+  return qwens<ModelUnloadResponse>({
+    method: 'post',
+    url: '/model/unload',
+    data,
+  })
+}
+
+// 确保模型已加载（先卸载再加载，保证干净状态）
+export async function ensureModelLoaded(model: 'tts' | 'voxcpm2'): Promise<boolean> {
+  try {
+    await unloadModel({ model })
+
+    const loadRes = await loadModel({ model })
+    return loadRes.data.success
+  } catch {
+    return false
+  }
+}
+
+// 单条语音克隆
+export function clone(data: CloneRequest) {
+  return qwens<CloneResponse>({
+    method: 'post',
+    url: '/clone',
+    data: {
+      ...data,
+      save_file: data.save_file ?? true,
+    },
+  })
+}
+
+// 语音转文本
+export function stt(data: STTRequest) {
+  return qwens<STTResponse>({
+    method: 'post',
+    url: '/stt',
+    data,
+  })
+}
+
+// VoxCPM2 声音设计
+export function voxDesign(data: VoxDesignRequest) {
+  return qwens<VoxDesignResponse>({
+    method: 'post',
+    url: '/vox/design',
+    data: {
+      ...data,
+      save_file: data.save_file ?? true,
+    },
+  })
+}
+
+// VoxCPM2 克隆 + 情感
+export function voxClone(data: VoxCloneRequest) {
+  return qwens<VoxCloneResponse>({
+    method: 'post',
+    url: '/vox/clone',
+    data: {
+      ...data,
+      save_file: data.save_file ?? true,
+    },
+  })
+}
+
+// 批量配音
+export function batchClone(data: BatchCloneRequest) {
+  return qwens<BatchCloneResponse>({
+    method: 'post',
+    url: '/batch-clone',
+    data,
+  })
+}
+
+// 多角色对话
+export function dialogue(data: DialogueRequest) {
+  return qwens<DialogueResponse>({
+    method: 'post',
+    url: '/dialogue',
+    data,
+  })
+}
+
+// 文件列表
+export function getFilesList(limit = 100, offset = 0) {
+  return qwens<FilesListResponse>({
+    method: 'get',
+    url: '/files',
+    params: { limit, offset },
+  })
+}

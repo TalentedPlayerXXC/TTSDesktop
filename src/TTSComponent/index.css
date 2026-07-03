@@ -309,3 +309,208 @@
   margin: 12px 0 0;
   font-size: 14px;
 }
+
+/* ===== 模式切换标签 ===== */
+.tts-mode-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 16px;
+  padding: 4px;
+  background: #f5f3ff;
+  border-radius: 10px;
+  border: 1px solid #ede9fe;
+}
+
+.tts-mode-tab {
+  flex: 1;
+  padding: 8px 0;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.tts-mode-tab:hover {
+  color: #7c3aed;
+  background: rgba(124, 58, 237, 0.06);
+}
+
+.tts-mode-tab.active {
+  background: #fff;
+  color: #7c3aed;
+  font-weight: 600;
+  box-shadow: 0 1px 4px rgba(124, 58, 237, 0.12);
+}
+
+/* ===== 多人配音 ===== */
+.tts-multi-section {
+  display: flex;
+  flex-direction: column;
+}
+
+.tts-multi-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.tts-multi-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: #fafafa;
+  border-radius: 8px;
+  border: 1px solid #f0f0f0;
+}
+
+.tts-multi-line-index {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #ede9fe;
+  color: #7c3aed;
+  font-size: 11px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.tts-multi-line-speaker {
+  width: 120px;
+  flex-shrink: 0;
+}
+
+.tts-multi-line-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.tts-multi-line-remove {
+  font-size: 14px;
+  color: #bbb;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: color 0.2s;
+}
+
+.tts-multi-line-remove:hover {
+  color: #f5222d;
+}
+
+.tts-multi-add {
+  font-size: 12px;
+  color: #7c3aed;
+  border-color: #e0d4f0;
+}
+
+.tts-multi-add:hover {
+  color: #6d28d9 !important;
+  border-color: #7c3aed !important;
+  background: #f8f6ff !important;
+}
+
+/* ===== 多人角色概览 ===== */
+.tts-multi-summary {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.tts-multi-role-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.tts-multi-role-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: #fafafa;
+  border-radius: 8px;
+  border: 1px solid #f0f0f0;
+}
+
+.tts-multi-role-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #7c3aed, #a78bfa);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.tts-multi-role-avatar.female {
+  background: linear-gradient(135deg, #ec4899, #f472b6);
+}
+
+.tts-multi-role-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.tts-multi-role-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: #1a1a2e;
+}
+
+.tts-multi-role-text {
+  font-size: 12px;
+  color: #999;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ===== 情感风格标签 ===== */
+.tts-emotion-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tts-emotion-tag {
+  padding: 6px 16px;
+  border-radius: 8px;
+  border: 1px solid #e8e8e8;
+  background: #fafafa;
+  color: #666;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s;
+  line-height: 1.4;
+}
+
+.tts-emotion-tag:hover {
+  border-color: #ec4899;
+  color: #ec4899;
+  background: #fdf2f8;
+}
+
+.tts-emotion-tag.active {
+  border-color: #ec4899;
+  color: #fff;
+  background: linear-gradient(135deg, #ec4899, #f472b6);
+  font-weight: 500;
+}

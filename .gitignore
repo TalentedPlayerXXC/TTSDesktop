@@ -2,8 +2,9 @@ node_modules/
 dist/
 .npm-cache/
 .DS_Store
-# QwenTTS Server 这个只保留个本地文件夹就行
-# qwen_tts_server/
+# TTS Server 只保留文件夹，不提交内容
+tts_serve_mlx/*
+!tts_serve_mlx/.gitkeep
 
 # Logs
 logs
