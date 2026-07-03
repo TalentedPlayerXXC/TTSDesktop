@@ -1,6 +1,88 @@
-[中文](update.md) | [English](update_EN.md)
+[中文](UPDATE.md) | [English](UPDATE_EN.md)
 
 # 更新日志
+
+## 2025-07-03
+
+### ✨ 新功能
+
+#### 1. 多人对话配音
+- 智能配音新增**多人对话模式**，支持添加多个角色行
+- 每行可独立选择配音员、输入台词，想加几行加几行
+- 右侧实时显示角色概览，演员阵容一目了然
+
+#### 2. 情感配音模式
+- 新增**情感配音模式**，内置 12 种情感标签：开心、悲伤、愤怒、温柔、沉稳、活泼、治愈、深沉、元气、性感、严肃、慵懒
+- 支持多选情感组合，让声音更有戏
+
+#### 3. 崩溃测试页面
+- 新增 `/crash-test` 页面，方便开发者测试错误边界
+- 提供三种崩溃方式：普通异常、异步错误、React 渲染崩坏
+
+#### 4. ErrorBoundary 全局保护
+- 全局错误边界组件，捕获渲染异常不会白屏
+- 显示错误详情和堆栈信息，支持一键"重新来过"
+
+#### 5. CyberpunkLoading 全屏加载
+- 赛博朋克风格的全屏加载动画组件
+- 支持自定义加载信息和模型名称
+
+### 🔧 功能重构
+
+#### 1. 一句话克隆（TTSComponentBeta）大改
+- 砍掉了语言选择、文本切割方式、语速滑块 —— 那些交给 AI 自己操心
+- 从传 FormData 改为传文件路径，接入真实后端 API
+- 新增模型加载流程（`ensureModelLoaded`），先卸载旧模型再加载，保证干净
+- 配合 CyberpunkLoading 显示"正在加载模型..."的实时状态
+- 文本上限从 300 提升到 **5000 字**
+
+#### 2. 声音设计（VoiceDesign）大改
+- 移除语速、音量滑块和重置按钮 —— 不再需要手调参数
+- 新增**配音文本输入框**，文本上限 5000 字
+- 提示词上限从 200 提升到 **500 字**
+- 接入真实后端 API（`voxDesign`），合成后可在线播放
+- 同样加入 CyberpunkLoading 加载动效
+
+#### 3. 服务层全面 TS 化
+- 新增 `src/services/types.ts`，所有 API 请求/响应都有完整 TypeScript 类型
+- 统一 API 规范：`clone` / `batchClone` / `dialogue` / `voxDesign` / `voxClone` / `stt` / `getFilesList`
+- 废弃旧接口：`getTTS` / `qwen` / `getModels` / `getSpks` / `getFileLink` / `getEmotionList`
+- 新增模型生命周期管理函数 `ensureModelLoaded`
+- Electron 和浏览器模式自动切换 API 基地址
+- `index_fetch.tsx` 同步更新，纯 fetch 版同样享受所有新接口
+
+### 🎨 UI/UX 优化
+
+- 智能配音页面新增**模式切换标签**（单人 / 多人 / 情感），清晰直观
+- 配音文本上限统一提升至 **5000 字**，长文本福音
+- GitHub Issues 链接更新到新仓库地址
+- Mascot 反馈表单的文本域增加 `autoSize`
+
+### 📁 新增文件
+
+```
+src/
+├── services/
+│   └── types.ts               # 全量 API 类型定义（新增）
+├── components/
+│   ├── CrashTest.tsx           # 崩溃测试页面（新增）
+│   ├── CyberpunkLoading.tsx    # 赛博朋克加载组件（新增）
+│   ├── CyberpunkLoading.css    # 加载组件样式（新增）
+│   ├── ErrorBoundary.tsx       # 错误边界组件（新增）
+│   └── ErrorBoundary.css       # 错误边界样式（新增）
+tts_serve_mlx/                  # Python 后端服务目录（新增）
+ELECTRON_INTEGRATION.md         # Electron 集成文档（新增）
+api.md                          # API 接口文档（新增）
+```
+
+### 🔧 其他调整
+
+- `.gitignore` 新增 `tts_serve_mlx` 保留目录规则（只留目录，不提交模型文件）
+- SidebarMenu 新增 `/crash-test` 路由入口
+- 路由系统新增 `/crash-test` 页面注册
+- `package.json` 依赖版本微调
+
+---
 
 ## 2025-06-17
 

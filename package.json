@@ -39,8 +39,8 @@
     ],
     "extraResources": [
       {
-        "from": "qwen_tts_server",
-        "to": "qwen_tts_server"
+        "from": "tts_serve_mlx",
+        "to": "tts_serve_mlx"
       }
     ],
     "mac": {

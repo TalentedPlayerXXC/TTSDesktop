@@ -1,6 +1,88 @@
-[中文](update.md) | [English](update_EN.md)
+[中文](UPDATE.md) | [English](UPDATE_EN.md)
 
 # Changelog
+
+## 2025-07-03
+
+### ✨ New Features
+
+#### 1. Multi-Character Dubbing
+- Smart Dubbing now has a **Multi-Character Mode** with per-line speaker and text editing
+- Pick a different voice actor for each line, add as many lines as you want
+- Real-time character overview on the right — your casting call at a glance
+
+#### 2. Emotion Dubbing Mode
+- Brand new **Emotion Mode** with 12 emotion tags: happy, sad, angry, gentle, calm, lively, healing, deep, energetic, sexy, serious, lazy
+- Select multiple emotions for extra dramatic effect
+
+#### 3. Crash Test Page
+- New `/crash-test` route for debugging error boundaries
+- Three crash types: normal exception, async error, and full-on React meltdown
+
+#### 4. ErrorBoundary Global Protection
+- Catches render errors so you never see a white screen of death
+- Shows error details and stack trace, with a "try again" button
+
+#### 5. CyberpunkLoading Screen
+- Full-screen cyberpunk-styled loading animation component
+- Customizable loading message and model name
+
+### 🔧 Refactoring
+
+#### 1. One-Shot Cloning (TTSComponentBeta) Overhaul
+- Removed language selection, text splitting mode, speed slider — let the AI handle it
+- Switched from FormData upload to file path, now talks to the real backend API
+- Added model loading workflow (`ensureModelLoaded`) — unload old model first, then load fresh
+- CyberpunkLoading shows real-time "Loading model..." status
+- Text limit bumped from 300 to **5000 characters**
+
+#### 2. Voice Design (VoiceDesign) Overhaul
+- Removed speed/volume sliders and reset button — no more knob-twiddling
+- Added **text input field** for the content to synthesize (up to 5000 chars)
+- Prompt limit raised from 200 to **500 characters**
+- Connected to real backend API (`voxDesign`), audio plays inline after synthesis
+- CyberpunkLoading included for the dramatic wait
+
+#### 3. Service Layer Fully TypeScript'd
+- New `src/services/types.ts` — full TypeScript types for every API request/response
+- Unified API: `clone` / `batchClone` / `dialogue` / `voxDesign` / `voxClone` / `stt` / `getFilesList`
+- Deprecated: `getTTS` / `qwen` / `getModels` / `getSpks` / `getFileLink` / `getEmotionList`
+- New `ensureModelLoaded` lifecycle manager
+- Auto-switches API base URL between Electron and browser
+- `index_fetch.tsx` synced up — pure-fetch version enjoys all the new endpoints too
+
+### 🎨 UI/UX Polish
+
+- Smart Dubbing page now has **mode tabs** (Single / Multi / Emotion) for easy switching
+- Text input limits uniformly raised to **5000 characters** — long texts rejoice
+- GitHub Issues link updated to the new repo
+- Mascot feedback form textarea now has `autoSize`
+
+### 📁 New Files
+
+```
+src/
+├── services/
+│   └── types.ts               # Full API type definitions (new)
+├── components/
+│   ├── CrashTest.tsx           # Crash test page (new)
+│   ├── CyberpunkLoading.tsx    # Cyberpunk loading component (new)
+│   ├── CyberpunkLoading.css    # Loading styles (new)
+│   ├── ErrorBoundary.tsx       # Error boundary component (new)
+│   └── ErrorBoundary.css       # Error boundary styles (new)
+tts_serve_mlx/                  # Python backend service directory (new)
+ELECTRON_INTEGRATION.md         # Electron integration docs (new)
+api.md                          # API documentation (new)
+```
+
+### 🔧 Other Changes
+
+- `.gitignore` updated with `tts_serve_mlx` directory rule (keep the folder, ignore the contents)
+- SidebarMenu now has `/crash-test` entry
+- Router added `/crash-test` route
+- `package.json` dependency bumps
+
+---
 
 ## 2025-06-17
 

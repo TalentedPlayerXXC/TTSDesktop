@@ -1,38 +1,121 @@
 const { app, BrowserWindow, shell } = require('electron')
 const path = require('path')
 const { spawn } = require('child_process')
-// import { app, BrowserWindow } from 'electron';
-// import path from 'path';
-// import { spawn } from 'child_process';
+const http = require('http')
 
-const isDev = process.env.NODE_ENV === 'development';
-let serverProcess = null;
-let mainWindow = null;
+const isDev = process.env.NODE_ENV === 'development'
+const SERVER_HOST = '127.0.0.1'
+const SERVER_PORT = 8000
+const STARTUP_TIMEOUT = 120000
+const HEALTH_CHECK_INTERVAL = 500
 
-const serverPath = app.isPackaged
-  ? path.join(process.resourcesPath, 'qwen_tts_server', 'qwen_tts_server')
-  : path.join(__dirname, 'qwen_tts_server', 'qwen_tts_server');
+let serverProcess = null
+let mainWindow = null
+
+const serverDir = app.isPackaged
+  ? path.join(process.resourcesPath, 'tts_serve_mlx')
+  : path.join(__dirname, 'tts_serve_mlx')
+
+const serverExe = path.join(serverDir, 'tts_serve_mlx')
+const modelsDir = path.join(serverDir, 'models')
+
+function httpGet(url) {
+  return new Promise((resolve) => {
+    const req = http.get(url, (res) => {
+      resolve(res.statusCode === 200)
+    })
+    req.on('error', () => resolve(false))
+    req.setTimeout(2000, () => { req.destroy(); resolve(false) })
+  })
+}
+
+async function waitForServer() {
+  const url = `http://${SERVER_HOST}:${SERVER_PORT}/health`
+  const start = Date.now()
+
+  while (Date.now() - start < STARTUP_TIMEOUT) {
+    const ok = await httpGet(url)
+    if (ok) return
+    await new Promise((r) => setTimeout(r, HEALTH_CHECK_INTERVAL))
+  }
+
+  throw new Error(`TTS 服务启动超时 (${STARTUP_TIMEOUT}ms)`)
+}
+
+async function unloadTTTModel() {
+  const url = `http://${SERVER_HOST}:${SERVER_PORT}/model/unload`
+  return new Promise((resolve) => {
+    const data = JSON.stringify({ model: 'tts' })
+    const req = http.request(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    }, (res) => {
+      resolve(res.statusCode === 200)
+    })
+    req.on('error', () => resolve(false))
+    req.write(data)
+    req.end()
+  })
+}
+
+async function loadTTTModel() {
+  const url = `http://${SERVER_HOST}:${SERVER_PORT}/model/load`
+  return new Promise((resolve) => {
+    const data = JSON.stringify({ model: 'tts' })
+    const req = http.request(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    }, (res) => {
+      resolve(res.statusCode === 200)
+    })
+    req.on('error', () => resolve(false))
+    req.write(data)
+    req.end()
+  })
+}
 
 function startServer() {
-  serverProcess = spawn(serverPath, [], {
-    stdio: 'ignore',
-    env: { ...process.env },
-  });
+  console.log('[TTS] 启动服务:', serverExe)
+
+  serverProcess = spawn(serverExe, [], {
+    cwd: serverDir,
+    env: {
+      ...process.env,
+      TTS_SERVE_PORT: String(SERVER_PORT),
+      TTS_SERVE_HOST: SERVER_HOST,
+      TTS_SERVE_LOG_LEVEL: 'warning',
+      TTS_SERVE_MODELS_DIR: modelsDir,
+    },
+    stdio: ['ignore', 'pipe', 'pipe'],
+  })
+
+  serverProcess.stdout.on('data', (data) => {
+    console.log(`[TTS:out] ${data.toString().trim()}`)
+  })
+  serverProcess.stderr.on('data', (data) => {
+    console.log(`[TTS:err] ${data.toString().trim()}`)
+  })
   serverProcess.on('error', (err) => {
-    console.error('Failed to start QwenTTS server:', err.message);
-  });
+    console.error('[TTS] 进程错误:', err.message)
+  })
   serverProcess.on('exit', (code) => {
-    if (code !== 0 && code !== null) {
-      console.warn(`QwenTTS server exited with code ${code}`);
-    }
-  });
+    console.log(`[TTS] 进程退出, code=${code}`)
+    serverProcess = null
+  })
 }
 
 function stopServer() {
-  if (serverProcess) {
-    serverProcess.kill('SIGTERM');
-    serverProcess = null;
-  }
+  if (!serverProcess) return
+
+  console.log('[TTS] 正在关闭服务...')
+  serverProcess.kill('SIGTERM')
+
+  setTimeout(() => {
+    if (serverProcess) {
+      console.log('[TTS] 强制终止')
+      serverProcess.kill('SIGKILL')
+    }
+  }, 5000)
 }
 
 function createWindow() {
@@ -43,42 +126,56 @@ function createWindow() {
     maxWidth: 1920,
     maxHeight: 1080,
     webPreferences: {
-      nodeIntegration: false, 
+      nodeIntegration: false,
       contextIsolation: true,
     },
-  });
+  })
 
-  // 处理外部链接，在默认浏览器中打开
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    shell.openExternal(url);
-    return { action: 'deny' };
-  });
+    shell.openExternal(url)
+    return { action: 'deny' }
+  })
 
   if (isDev) {
-    // 开发环境可以局域网访问，方便调试
-    // win.loadURL('http://localhost:5173');
-    mainWindow.loadFile(path.join(__dirname, 'dist', 'index.html'));
-    mainWindow.webContents.openDevTools(); // 打开开发者工具
+    mainWindow.loadFile(path.join(__dirname, 'dist', 'index.html'))
+    mainWindow.webContents.openDevTools()
   } else {
-    mainWindow.loadFile(path.join(__dirname, 'dist', 'index.html'));
-    mainWindow.setMenu(null); // 生产环境去掉菜单栏
-
+    mainWindow.loadFile(path.join(__dirname, 'dist', 'index.html'))
+    mainWindow.setMenu(null)
   }
 }
 
-app.whenReady().then(() => {
-  startServer();
-  createWindow();
-});
+app.whenReady().then(async () => {
+  try {
+    startServer()
+    console.log('[TTS] 等待服务就绪...')
+    await waitForServer()
+    console.log('[TTS] 服务就绪')
+
+    console.log('[TTS] 加载 Qwen3 TTS + ASR 模型...')
+    await unloadTTTModel()
+    const loaded = await loadTTTModel()
+    if (!loaded) {
+      console.error('[TTS] 模型加载失败')
+    } else {
+      console.log('[TTS] 模型加载完成')
+    }
+  } catch (err) {
+    console.error('[TTS] 启动失败:', err.message)
+  }
+
+  createWindow()
+})
 
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') app.quit();
-});
+  stopServer()
+  if (process.platform !== 'darwin') app.quit()
+})
 
 app.on('will-quit', () => {
-  stopServer();
-});
+  stopServer()
+})
 
 app.on('before-quit', () => {
-  stopServer();
-});
+  stopServer()
+})
