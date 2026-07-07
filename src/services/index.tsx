@@ -19,6 +19,9 @@ import type {
   STTRequest,
   STTResponse,
   FilesListResponse,
+  CacheStatusResponse,
+  CleanupRequest,
+  CleanupResponse,
 } from './types'
 
 const isElectron = navigator.userAgent.toLowerCase().includes('electron')
@@ -64,12 +67,22 @@ export function unloadModel(data: ModelUnloadRequest) {
 }
 
 // 确保模型已加载（先卸载再加载，保证干净状态）
+let currentLoadedModel: 'tts' | 'voxcpm2' | null = null
+
 export async function ensureModelLoaded(model: 'tts' | 'voxcpm2'): Promise<boolean> {
+  if (currentLoadedModel === model) return true
+
   try {
-    await unloadModel({ model })
+    if (currentLoadedModel) {
+      await unloadModel({ model: currentLoadedModel })
+    }
 
     const loadRes = await loadModel({ model })
-    return loadRes.data.success
+    if (loadRes.data.success) {
+      currentLoadedModel = model
+      return true
+    }
+    return false
   } catch {
     return false
   }
@@ -134,6 +147,23 @@ export function dialogue(data: DialogueRequest) {
   return qwens<DialogueResponse>({
     method: 'post',
     url: '/dialogue',
+    data,
+  })
+}
+
+// 缓存状态
+export function getCacheStatus() {
+  return qwens<CacheStatusResponse>({
+    method: 'get',
+    url: '/cache',
+  })
+}
+
+// 清理缓存
+export function cleanupCache(data: CleanupRequest) {
+  return qwens<CleanupResponse>({
+    method: 'post',
+    url: '/cleanup',
     data,
   })
 }

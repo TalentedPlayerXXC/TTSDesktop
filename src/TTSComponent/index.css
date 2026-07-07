@@ -15,7 +15,7 @@
 .tts-title {
   font-size: 22px;
   font-weight: 600;
-  color: #1a1a2e;
+  color: var(--text-primary);
   margin: 0 0 4px;
   display: flex;
   align-items: center;
@@ -24,7 +24,7 @@
 
 .tts-subtitle {
   font-size: 13px;
-  color: #999;
+  color: var(--text-subtitle);
   margin: 0;
 }
 
@@ -53,27 +53,26 @@
 }
 
 .tts-section {
-  background: #fff;
+  background: var(--bg-card);
   border-radius: 10px;
-  border: 1px solid #f0f0f0;
+  border: 1px solid var(--border-default);
   padding: 16px 20px;
 }
 
 .tts-section-title {
   font-size: 14px;
   font-weight: 600;
-  color: #4c1d95;
+  color: var(--text-section-title);
   margin-bottom: 14px;
   padding: 8px 12px;
   border-radius: 6px;
-  background: #faf9ff;
+  background: var(--bg-section-title);
 }
 
 .tts-text-input {
   font-size: 14px;
   line-height: 1.8;
   resize: none;
-  user-select: text;
 }
 
 .tts-text-footer {
@@ -81,7 +80,7 @@
   justify-content: flex-end;
   margin-top: 6px;
   font-size: 12px;
-  color: #bbb;
+  color: var(--text-muted);
 }
 
 .tts-speaker-section {
@@ -97,14 +96,14 @@
 
 .tts-speaker-search .ant-input-affix-wrapper {
   border-radius: 20px;
-  background: #f5f5f5;
+  background: var(--bg-muted);
   border-color: transparent;
 }
 
 .tts-speaker-search .ant-input-affix-wrapper:hover,
 .tts-speaker-search .ant-input-affix-wrapper-focused {
-  background: #fff;
-  border-color: #7c3aed;
+  background: var(--bg-card);
+  border-color: var(--accent);
 }
 
 .tts-speaker-types {
@@ -113,16 +112,16 @@
   gap: 4px;
   margin-bottom: 10px;
   padding-bottom: 10px;
-  border-bottom: 1px solid #f5f5f5;
+  border-bottom: 1px solid var(--border-default);
 }
 
 .tts-type-btn {
   padding: 3px 12px;
   border-radius: 14px;
-  border: 1px solid #e0e0e0;
-  background: #fff;
+  border: 1px solid var(--border-hover);
+  background: var(--bg-card);
   font-size: 12px;
-  color: #666;
+  color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.2s;
   white-space: nowrap;
@@ -132,13 +131,13 @@
 }
 
 .tts-type-btn:hover {
-  border-color: #7c3aed;
-  color: #7c3aed;
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 .tts-type-btn.active {
-  background: #7c3aed;
-  border-color: #7c3aed;
+  background: var(--accent);
+  border-color: var(--accent);
   color: #fff;
 }
 
@@ -156,7 +155,7 @@
 }
 
 .tts-speaker-list::-webkit-scrollbar-thumb {
-  background: #d0d0d0;
+  background: var(--text-muted);
   border-radius: 2px;
 }
 
@@ -168,26 +167,26 @@
   cursor: pointer;
   transition: all 0.15s;
   border-radius: 10px;
-  border: 1px solid #f0f0f0;
-  background: #fafafa;
+  border: 1px solid var(--border-default);
+  background: var(--bg-muted);
   position: relative;
 }
 
 .tts-speaker-item:hover {
-  background: #f8f6ff;
-  border-color: #d4c4f0;
+  background: var(--accent-bg-hover);
+  border-color: var(--accent-bg-hover);
 }
 
 .tts-speaker-item.selected {
-  background: #f0ebff;
-  border-color: #7c3aed;
+  background: var(--accent-bg);
+  border-color: var(--accent);
 }
 
 .tts-speaker-avatar {
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #7c3aed, #a78bfa);
+  background: linear-gradient(135deg, var(--accent), var(--accent-hover));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -198,13 +197,13 @@
 }
 
 .tts-speaker-avatar.female {
-  background: linear-gradient(135deg, #ec4899, #f472b6);
+  background: var(--pink);
 }
 
 .tts-speaker-name {
   font-size: 13px;
   font-weight: 500;
-  color: #1a1a2e;
+  color: var(--text-primary);
   text-align: center;
 }
 
@@ -216,8 +215,8 @@
 
 .tts-speaker-tag {
   font-size: 10px;
-  color: #999;
-  background: #f0f0f0;
+  color: var(--text-muted);
+  background: var(--border-default);
   padding: 0 5px;
   border-radius: 3px;
   line-height: 16px;
@@ -225,7 +224,7 @@
 
 .tts-speaker-fav {
   font-size: 14px;
-  color: #d0d0d0;
+  color: var(--text-muted);
   cursor: pointer;
   transition: color 0.2s;
   flex-shrink: 0;
@@ -238,11 +237,11 @@
 }
 
 .tts-speaker-fav:hover {
-  color: #f59e0b;
+  color: var(--gold);
 }
 
 .tts-speaker-fav.favorited {
-  color: #f59e0b;
+  color: var(--gold);
 }
 
 .tts-speaker-empty {
@@ -251,7 +250,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  color: #bbb;
+  color: var(--text-muted);
   min-height: 200px;
 }
 
@@ -275,13 +274,13 @@
   height: 44px;
   font-size: 15px;
   border-radius: 8px;
-  background: #7c3aed;
-  border-color: #7c3aed;
+  background: var(--accent);
+  border-color: var(--accent);
 }
 
 .tts-btn-primary:not(:disabled):hover {
-  background: #6d28d9 !important;
-  border-color: #6d28d9 !important;
+  background: var(--accent-hover) !important;
+  border-color: var(--accent-hover) !important;
 }
 
 .tts-preview-center {
@@ -289,15 +288,15 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #fff;
+  background: var(--bg-card);
   border-radius: 10px;
-  border: 1px solid #f0f0f0;
+  border: 1px solid var(--border-default);
   flex-shrink: 0;
 }
 
 .tts-preview-placeholder {
   text-align: center;
-  color: #ccc;
+  color: var(--text-placeholder);
 }
 
 .tts-preview-icon {
@@ -316,9 +315,9 @@
   gap: 4px;
   margin-bottom: 16px;
   padding: 4px;
-  background: #f5f3ff;
+  background: var(--bg-tab-bar);
   border-radius: 10px;
-  border: 1px solid #ede9fe;
+  border: 1px solid var(--accent-bg);
 }
 
 .tts-mode-tab {
@@ -328,7 +327,7 @@
   background: transparent;
   border-radius: 8px;
   font-size: 13px;
-  color: #666;
+  color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.2s;
   display: flex;
@@ -338,15 +337,15 @@
 }
 
 .tts-mode-tab:hover {
-  color: #7c3aed;
-  background: rgba(124, 58, 237, 0.06);
+  color: var(--accent);
+  background: var(--accent-bg-hover);
 }
 
 .tts-mode-tab.active {
-  background: #fff;
-  color: #7c3aed;
+  background: var(--bg-card);
+  color: var(--accent);
   font-weight: 600;
-  box-shadow: 0 1px 4px rgba(124, 58, 237, 0.12);
+  box-shadow: var(--shadow-sm);
 }
 
 /* ===== 多人配音 ===== */
@@ -367,17 +366,17 @@
   align-items: center;
   gap: 8px;
   padding: 8px 10px;
-  background: #fafafa;
+  background: var(--bg-muted);
   border-radius: 8px;
-  border: 1px solid #f0f0f0;
+  border: 1px solid var(--border-default);
 }
 
 .tts-multi-line-index {
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  background: #ede9fe;
-  color: #7c3aed;
+  background: var(--accent-bg);
+  color: var(--accent);
   font-size: 11px;
   font-weight: 600;
   display: flex;
@@ -398,26 +397,26 @@
 
 .tts-multi-line-remove {
   font-size: 14px;
-  color: #bbb;
+  color: var(--text-muted);
   cursor: pointer;
   flex-shrink: 0;
   transition: color 0.2s;
 }
 
 .tts-multi-line-remove:hover {
-  color: #f5222d;
+  color: var(--red);
 }
 
 .tts-multi-add {
   font-size: 12px;
-  color: #7c3aed;
-  border-color: #e0d4f0;
+  color: var(--accent);
+  border-color: var(--border-hover);
 }
 
 .tts-multi-add:hover {
-  color: #6d28d9 !important;
-  border-color: #7c3aed !important;
-  background: #f8f6ff !important;
+  color: var(--accent-hover) !important;
+  border-color: var(--accent) !important;
+  background: var(--accent-bg-hover) !important;
 }
 
 /* ===== 多人角色概览 ===== */
@@ -441,16 +440,16 @@
   align-items: center;
   gap: 10px;
   padding: 10px 12px;
-  background: #fafafa;
+  background: var(--bg-muted);
   border-radius: 8px;
-  border: 1px solid #f0f0f0;
+  border: 1px solid var(--border-default);
 }
 
 .tts-multi-role-avatar {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #7c3aed, #a78bfa);
+  background: linear-gradient(135deg, var(--accent), var(--accent-hover));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -461,7 +460,7 @@
 }
 
 .tts-multi-role-avatar.female {
-  background: linear-gradient(135deg, #ec4899, #f472b6);
+  background: var(--pink);
 }
 
 .tts-multi-role-info {
@@ -472,12 +471,12 @@
 .tts-multi-role-name {
   font-size: 13px;
   font-weight: 500;
-  color: #1a1a2e;
+  color: var(--text-primary);
 }
 
 .tts-multi-role-text {
   font-size: 12px;
-  color: #999;
+  color: var(--text-subtitle);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -493,9 +492,9 @@
 .tts-emotion-tag {
   padding: 6px 16px;
   border-radius: 8px;
-  border: 1px solid #e8e8e8;
-  background: #fafafa;
-  color: #666;
+  border: 1px solid var(--border-light);
+  background: var(--bg-muted);
+  color: var(--text-secondary);
   font-size: 13px;
   cursor: pointer;
   transition: all 0.15s;
@@ -503,14 +502,69 @@
 }
 
 .tts-emotion-tag:hover {
-  border-color: #ec4899;
-  color: #ec4899;
-  background: #fdf2f8;
+  border-color: var(--pink);
+  color: var(--pink);
+  background: var(--pink-bg);
 }
 
 .tts-emotion-tag.active {
-  border-color: #ec4899;
+  border-color: var(--pink);
   color: #fff;
-  background: linear-gradient(135deg, #ec4899, #f472b6);
+  background: var(--pink);
   font-weight: 500;
+}
+
+/* ===== 骨架屏 ===== */
+@keyframes tts-shimmer {
+  0% { opacity: 0.6; }
+  50% { opacity: 1; }
+  100% { opacity: 0.6; }
+}
+
+@keyframes tts-shimmer {
+  0% { opacity: 0.6; }
+  50% { opacity: 1; }
+  100% { opacity: 0.6; }
+}
+
+.tts-speaker-skeleton-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 16px 8px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border-default);
+  background: var(--bg-muted);
+}
+
+.tts-speaker-skeleton-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--border-default);
+  margin-bottom: 8px;
+  animation: tts-shimmer 1.5s ease-in-out infinite;
+}
+
+.tts-speaker-skeleton-name {
+  width: 60%;
+  height: 14px;
+  border-radius: 4px;
+  background: var(--border-default);
+  margin-bottom: 8px;
+  animation: tts-shimmer 1.5s ease-in-out infinite;
+}
+
+.tts-speaker-skeleton-tags {
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+}
+
+.tts-speaker-skeleton-tag {
+  width: 40px;
+  height: 16px;
+  border-radius: 3px;
+  background: var(--border-default);
+  animation: tts-shimmer 1.5s ease-in-out infinite;
 }

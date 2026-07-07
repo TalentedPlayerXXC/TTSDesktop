@@ -11,7 +11,6 @@ const menuItems: MenuItem[] = [
   { key: '/tts-beta', label: '一句话克隆' },
   { key: '/voice-design', label: '声音设计' },
   { key: '/settings', label: '偏好设置' },
-  { key: '/crash-test', label: '崩溃测试' },
 ]
 
 // 粒子类

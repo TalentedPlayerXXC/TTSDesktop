@@ -1,11 +1,12 @@
 import { useEffect, useCallback, useState } from 'react';
-import { message } from 'antd';
+import { ConfigProvider, theme as antTheme, message } from 'antd';
 import { useLocation, useNavigate } from 'react-router';
 import LoginComp from './LoginComp';
 import Mascot from './components/Mascot';
 import SidebarMenu from './components/SidebarMenu';
 import CyberpunkLoading from './components/CyberpunkLoading';
 import ErrorBoundary from './components/ErrorBoundary';
+import { SettingsProvider, useSettings } from './services/SettingsContext';
 import { ensureModelLoaded } from './services/index';
 import './App.css';
 import Routers from './routes';
@@ -27,19 +28,25 @@ const items = [
     key: '/settings',
     label: '设置',
   },
-  {
-    key: '/crash-test',
-    label: '崩溃测试',
-  },
 ];
 
-function App() {
+const { defaultAlgorithm, darkAlgorithm } = antTheme
+
+function AppContent() {
   const navigate = useNavigate();
   const { pathname } = useLocation();
+  const { settings } = useSettings();
 
   const [modelLoading, setModelLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('');
   const [loadingModelName, setLoadingModelName] = useState('');
+
+  const isDark = settings.theme === 'dark'
+    || (settings.theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light')
+  }, [isDark])
 
   const selectedKey = items.some((item) => item.key === pathname)
     ? pathname
@@ -64,31 +71,53 @@ function App() {
         message.error('模型加载失败，请稍后重试');
         return;
       }
+    } else if (path === '/tts' || path === '/tts-beta') {
+      setModelLoading(true);
+      setLoadingMessage('正在加载 Qwen3 TTS 模型...');
+      setLoadingModelName('Qwen3 TTS');
+
+      const ok = await ensureModelLoaded('tts');
+      setModelLoading(false);
+
+      if (!ok) {
+        message.error('模型加载失败，请稍后重试');
+        return;
+      }
     }
     navigate(path);
   }, [navigate]);
 
   return (
-    <div className='app'>
-      <LoginComp />
-      <SidebarMenu
-        currentPath={selectedKey}
-        onNavigate={handleNavigate}
-      />
-      <div className='contentwrap'>
-        <ErrorBoundary onNavigate={navigate}>
-          <Routers />
-        </ErrorBoundary>
-        <Mascot />
-      </div>
+    <ConfigProvider theme={{ algorithm: isDark ? darkAlgorithm : defaultAlgorithm }}>
+      <div className='app'>
+        <LoginComp />
+        <SidebarMenu
+          currentPath={selectedKey}
+          onNavigate={handleNavigate}
+        />
+        <div className='contentwrap'>
+          <ErrorBoundary onNavigate={navigate}>
+            <Routers />
+          </ErrorBoundary>
+          <Mascot />
+        </div>
 
-      <CyberpunkLoading
-        visible={modelLoading}
-        message={loadingMessage}
-        modelName={loadingModelName}
-      />
-    </div>
-  );
+        <CyberpunkLoading
+          visible={modelLoading}
+          message={loadingMessage}
+          modelName={loadingModelName}
+        />
+      </div>
+    </ConfigProvider>
+  )
+}
+
+function App() {
+  return (
+    <SettingsProvider>
+      <AppContent />
+    </SettingsProvider>
+  )
 }
 
 export default App;

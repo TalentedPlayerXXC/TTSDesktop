@@ -7,7 +7,6 @@ import TTSComponentBeta from '../TTSComponentBeta';
 import TTSComponent from '../TTSComponent';
 import VoiceDesign from '../VoiceDesign';
 import Settings from '../SettingsCompontent';
-import CrashTest from '../components/CrashTest';
 // 路由配置 
 // home
 // tts配音 
@@ -37,7 +36,6 @@ function Routers() {
             <Route path="/tts-beta" element={<TTSComponentBeta />} />
             <Route path="/voice-design" element={<VoiceDesign />} />
             <Route path="/settings" element={<Settings />} />
-            <Route path="/crash-test" element={<CrashTest />} />
         </Routes>
     )
 }

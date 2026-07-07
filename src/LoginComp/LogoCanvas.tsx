@@ -46,23 +46,31 @@ function LogoCanvas() {
       })
     }
 
+    function isDark() {
+      return document.documentElement.getAttribute('data-theme') === 'dark'
+    }
+
     function drawBackground(time: number) {
       ctx!.clearRect(0, 0, w, h)
       const ringAlpha = 0.25 + Math.sin(time * 0.002) * 0.1
+      const dark = isDark()
+      const accent = dark ? '196, 181, 253' : '124, 58, 237'
+      const accentLight = dark ? '167, 139, 250' : '167, 139, 250'
+
       ctx!.beginPath()
       ctx!.arc(19, 22, 13, 0, Math.PI * 2)
-      ctx!.strokeStyle = `rgba(124, 58, 237, ${ringAlpha})`
+      ctx!.strokeStyle = `rgba(${accent}, ${ringAlpha})`
       ctx!.lineWidth = 1
       ctx!.stroke()
       ctx!.beginPath()
       ctx!.arc(19, 22, 13, 0, Math.PI * 2)
-      ctx!.fillStyle = `rgba(245, 243, 255, 0.35)`
+      ctx!.fillStyle = dark ? 'rgba(42, 42, 80, 0.4)' : 'rgba(245, 243, 255, 0.35)'
       ctx!.fill()
 
       ctx!.beginPath()
       ctx!.arc(19, 22, 16, 0, Math.PI * 2)
       const outerAlpha = 0.12 + Math.sin(time * 0.003 + 1) * 0.06
-      ctx!.strokeStyle = `rgba(167, 139, 250, ${outerAlpha})`
+      ctx!.strokeStyle = `rgba(${accentLight}, ${outerAlpha})`
       ctx!.stroke()
     }
 
@@ -70,14 +78,20 @@ function LogoCanvas() {
       const bars = [6, 14, 22]
       const baseY = 28
       const phase = time * 0.004
+      const dark = isDark()
+      const accent = '167, 139, 250'
 
       for (let i = 0; i < bars.length; i++) {
         const hBar = bars[i] + Math.sin(phase + i * 1.2) * 4
         const x = 13 + i * 5.5
         const y = baseY - hBar
         const grad = ctx!.createLinearGradient(x, baseY, x, y)
-        grad.addColorStop(0, `rgba(124, 58, 237, 0.4)`)
-        grad.addColorStop(1, `rgba(124, 58, 237, ${0.85 + Math.sin(phase + i * 1.2) * 0.15})`)
+        grad.addColorStop(0, dark
+          ? `rgba(167, 139, 250, 0.5)`
+          : `rgba(124, 58, 237, 0.4)`)
+        grad.addColorStop(1, dark
+          ? `rgba(196, 181, 253, ${0.85 + Math.sin(phase + i * 1.2) * 0.15})`
+          : `rgba(124, 58, 237, ${0.85 + Math.sin(phase + i * 1.2) * 0.15})`)
         ctx!.fillStyle = grad
         roundRect(x, y, 2.5, hBar, 1.5)
       }
@@ -94,27 +108,39 @@ function LogoCanvas() {
       ctx!.lineTo(x + r, y + h)
       ctx!.arcTo(x, y + h, x, y + h - r, r)
       ctx!.lineTo(x, y + r)
-      ctx!.arcTo(x, y, x + r, y, r)
+      ctx!.arcTo(x, y + x, x + r, y, r)
       ctx!.closePath()
       ctx!.fill()
     }
 
     function drawText(time: number) {
       const glow = Math.sin(time * 0.002) * 0.15 + 0.85
-      ctx!.fillStyle = 'rgba(91, 33, 182, 0.12)'
-      ctx!.font = "400 28px 'Ma Shan Zheng', cursive, sans-serif"
-      ctx!.fillText('方休', 43, 32)
-      ctx!.fillStyle = `rgba(91, 33, 182, ${glow})`
-      ctx!.fillText('方休', 42, 31)
+      const dark = isDark()
+
+      if (dark) {
+        ctx!.fillStyle = 'rgba(167, 139, 250, 0.15)'
+        ctx!.font = "400 28px 'Ma Shan Zheng', cursive, sans-serif"
+        ctx!.fillText('方休', 43, 32)
+        ctx!.fillStyle = `rgba(196, 181, 253, ${glow})`
+        ctx!.fillText('方休', 42, 31)
+      } else {
+        ctx!.fillStyle = 'rgba(91, 33, 182, 0.12)'
+        ctx!.font = "400 28px 'Ma Shan Zheng', cursive, sans-serif"
+        ctx!.fillText('方休', 43, 32)
+        ctx!.fillStyle = `rgba(91, 33, 182, ${glow})`
+        ctx!.fillText('方休', 42, 31)
+      }
     }
 
     function drawParticles() {
+      const dark = isDark()
+      const color = dark ? '196, 181, 253' : '139, 92, 246'
       for (const p of particles) {
         const progress = p.life / p.maxLife
         const fade = progress < 0.2 ? progress / 0.2 : 1 - (progress - 0.2) / 0.8
         ctx!.beginPath()
         ctx!.arc(p.x, p.y, p.r, 0, Math.PI * 2)
-        ctx!.fillStyle = `rgba(139, 92, 246, ${fade * p.alpha})`
+        ctx!.fillStyle = `rgba(${color}, ${fade * p.alpha})`
         ctx!.fill()
       }
     }

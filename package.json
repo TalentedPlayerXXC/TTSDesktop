@@ -16,6 +16,7 @@
     "@ant-design/icons": "6.x",
     "antd": "^6.4.3",
     "axios": "^1.16.1",
+    "mongoose": "^9.7.3",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-router": "^7.15.1"

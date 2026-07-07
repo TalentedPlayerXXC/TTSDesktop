@@ -36,3 +36,5 @@ lerna-debug.log*
 # Release
 release/*
 !release/.gitkeep
+characters/*
+!characters/.gitkeep

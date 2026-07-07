@@ -12,11 +12,6 @@ export default defineConfig({
         changeOrigin: true,              // 修改请求源为后端地址
         rewrite: (path) => path.replace(/^\/api/, '') // 路径重写（可选）
       },
-      '/file': { // file接口暂时废弃
-        target: 'http://127.0.0.1:3000', // 后端接口地址
-        changeOrigin: true,              // 修改请求源为后端地址
-        rewrite: (path) => path.replace(/^\/file/, '') // 路径重写（可选）
-      },
       '/qwen': {
         target: 'http://127.0.0.1:8000', // 后端接口地址
         changeOrigin: true,              // 修改请求源为后端地址

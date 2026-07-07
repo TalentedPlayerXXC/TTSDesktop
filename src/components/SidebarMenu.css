@@ -24,7 +24,7 @@
   transform: translateY(-50%);
   font-size: 12px;
   color: #fff;
-  background: rgba(124, 58, 237, 0.95);
+  background: var(--accent);
   padding: 4px 12px;
   border-radius: 12px;
   white-space: nowrap;
@@ -32,7 +32,7 @@
   pointer-events: none;
   transition: opacity 0.2s ease;
   z-index: 10;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  box-shadow: 0 2px 8px var(--shadow-purple);
 }
 .sidebar-canvas-wrapper:hover .sidebar-tooltip {
   opacity: 1;

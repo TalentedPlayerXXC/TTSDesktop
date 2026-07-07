@@ -35,7 +35,7 @@
   transform: translateY(-50%);
   font-size: 11px;
   color: #fff;
-  background: rgba(124, 58, 237, 0.92);
+  background: var(--accent);
   padding: 2px 8px;
   border-radius: 8px;
   white-space: nowrap;
@@ -47,10 +47,10 @@
   height: 42px;
   border-radius: 50%;
   border: none;
-  background: #7c3aed;
+  background: var(--accent);
   color: #fff;
   cursor: pointer;
-  box-shadow: 0 3px 12px rgba(124,58,237,0.4);
+  box-shadow: 0 3px 12px var(--shadow-purple);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -86,12 +86,12 @@
   position: absolute;
   bottom: 120px;
   left: -40px;
-  background: #fff;
-  color: #1a1a2e;
+  background: var(--bg-card);
+  color: var(--text-primary);
   font-size: 13px;
   padding: 10px 14px;
   border-radius: 12px;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+  box-shadow: var(--shadow-md);
   white-space: nowrap;
   z-index: 2;
 }
@@ -101,7 +101,7 @@
   left: 68px;
   width: 12px;
   height: 12px;
-  background: #fff;
+  background: var(--bg-card);
   transform: rotate(45deg);
   box-shadow: 3px 3px 6px rgba(0,0,0,0.06);
 }
@@ -121,7 +121,7 @@
 .bug-modal-field {
   margin-bottom: 6px;
   font-size: 13px;
-  color: #555;
+  color: var(--text-secondary);
 }
 .bug-modal-textarea {
   resize: none;

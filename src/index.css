@@ -1,19 +1,99 @@
-
 :root {
-    /* --background-color: #000a23; */
-    --background-color: #F5F1E8;
+  --bg-app: #F5F1E8;
+  --bg-card: #fff;
+  --bg-header: #f6f4f1;
+  --bg-section-title: #faf9ff;
+  --bg-hover: #f8f6ff;
+  --bg-selected: #f0ebff;
+  --bg-muted: #fafafa;
+  --bg-tab-bar: #f5f3ff;
+  --bg-code: #08080f;
+
+  --text-primary: #1a1a2e;
+  --text-body: #4A4A48;
+  --text-secondary: #666;
+  --text-muted: #bbb;
+  --text-placeholder: #ccc;
+  --text-subtitle: #999;
+  --text-section-title: #4c1d95;
+  --text-menu-item: #4a4660;
+
+  --border-default: #f0f0f0;
+  --border-light: #e8e8e8;
+  --border-hover: #e0e0e0;
+
+  --accent: #7c3aed;
+  --accent-hover: #6d28d9;
+  --accent-bg: #f0ebff;
+  --accent-bg-hover: #f8f6ff;
+
+  --pink: #ec4899;
+  --pink-light: #fdf2f8;
+  --pink-bg: #fdf2f8;
+
+  --gold: #f59e0b;
+  --red: #f5222d;
+  --amber: #faad14;
+
+  --shadow-sm: 0 2px 12px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.15);
+  --shadow-lg: 0px 3px 6px 1px rgba(0, 0, 0, 0.3);
+  --shadow-purple: rgba(124, 58, 237, 0.3);
+}
+
+[data-theme="dark"] {
+  --bg-app: #0f0f1a;
+  --bg-card: #1a1a2e;
+  --bg-header: #1f1f35;
+  --bg-section-title: #252545;
+  --bg-hover: #2a2050;
+  --bg-selected: #352a5e;
+  --bg-muted: #1e1e32;
+  --bg-tab-bar: #1f1f38;
+  --bg-code: #050508;
+
+  --text-primary: #e0dff0;
+  --text-body: #b8b7cc;
+  --text-secondary: #8887a0;
+  --text-muted: #555570;
+  --text-placeholder: #444458;
+  --text-subtitle: #777690;
+  --text-section-title: #a78bfa;
+  --text-menu-item: #b8b7cc;
+
+  --border-default: #2a2a44;
+  --border-light: #333350;
+  --border-hover: #3a3a58;
+
+  --accent: #a78bfa;
+  --accent-hover: #c4b5fd;
+  --accent-bg: #352a5e;
+  --accent-bg-hover: #2a2050;
+
+  --pink: #f472b6;
+  --pink-light: #3a1a30;
+  --pink-bg: #2e1530;
+
+  --gold: #fbbf24;
+  --red: #ef4444;
+  --amber: #fbbf24;
+
+  --shadow-sm: 0 2px 12px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0px 3px 6px 1px rgba(0, 0, 0, 0.5);
+  --shadow-purple: rgba(167, 139, 250, 0.3);
 }
 
 body {
   height: 100vh;
 }
+
 html, body, #root {
-    margin: 0;
-    background-color: var(--background-color);
-    color: #4A4A48;
-    user-select: none;
+  margin: 0;
+  background-color: var(--bg-app);
+  color: var(--text-body);
 }
+
 #root {
-  /* width: 100%; */
   min-width: 1280px;
 }

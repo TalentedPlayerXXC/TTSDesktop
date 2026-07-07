@@ -299,9 +299,9 @@ function Mascot() {
   }, []);
 
   const handleBug = useCallback(() => {
-    setBugOpen(true);
+    messageApi.info('🥲 本功能因赞助商（也就是作者本人）资金链断裂暂停服务，攒够钱买服务器了一定补上！（有钱了踢我一下）');
     setMenuOpen(false);
-  }, []);
+  }, [messageApi]);
 
   const handleBugSubmit = useCallback(() => {
     if (!bugTitle.trim()) {

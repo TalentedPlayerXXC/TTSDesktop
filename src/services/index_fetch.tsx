@@ -44,12 +44,20 @@ export function unloadModel(data: ModelUnloadRequest) {
   return qwens<ModelUnloadResponse>({ method: 'post', url: '/model/unload', data })
 }
 
+let currentLoadedModel: 'tts' | 'voxcpm2' | null = null
+
 export async function ensureModelLoaded(model: 'tts' | 'voxcpm2'): Promise<boolean> {
+  if (currentLoadedModel === model) return true
+
   try {
     await unloadModel({ model })
 
     const loadRes = await loadModel({ model })
-    return loadRes.data.success
+    if (loadRes.data.success) {
+      currentLoadedModel = model
+      return true
+    }
+    return false
   } catch {
     return false
   }

@@ -1,7 +1,10 @@
-const { app, BrowserWindow, shell } = require('electron')
+const { app, BrowserWindow, shell, dialog, ipcMain } = require('electron')
 const path = require('path')
-const { spawn } = require('child_process')
+const fs = require('fs')
+const { spawn, fork } = require('child_process')
 const http = require('http')
+
+let mongoWorker = null
 
 const isDev = process.env.NODE_ENV === 'development'
 const SERVER_HOST = '127.0.0.1'
@@ -118,6 +121,46 @@ function stopServer() {
   }, 5000)
 }
 
+// MongoDB Worker
+const pendingReplies = new Map()
+let replyIdCounter = 0
+
+function startMongoWorker() {
+  mongoWorker = fork(path.join(__dirname, 'mongo-worker.js'))
+
+  mongoWorker.on('message', (data) => {
+    if (data._replyId != null) {
+      const resolve = pendingReplies.get(data._replyId)
+      if (resolve) {
+        pendingReplies.delete(data._replyId)
+        resolve(data)
+      }
+    }
+    if (data.type === 'connect') {
+      console.log(`[Mongo] ${data.status === 'ok' ? '已连接' : '连接失败: ' + data.error}`)
+    }
+  })
+
+  mongoWorker.on('exit', (code) => {
+    console.log(`[Mongo] worker 退出, code=${code}`)
+    mongoWorker = null
+  })
+
+  mongoWorker.on('error', (err) => {
+    console.error('[Mongo] worker 错误:', err.message)
+  })
+
+  // 自动连接
+  mongoWorker.send({ type: 'connect', uri: MONGODB_URI })
+}
+
+function stopMongoWorker() {
+  if (!mongoWorker) return
+  mongoWorker.send({ type: 'disconnect' })
+  mongoWorker.kill()
+  mongoWorker = null
+}
+
 function createWindow() {
   mainWindow = new BrowserWindow({
     title: '一个简单的配音工具',
@@ -126,6 +169,7 @@ function createWindow() {
     maxWidth: 1920,
     maxHeight: 1080,
     webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: false,
       contextIsolation: true,
     },
@@ -145,9 +189,170 @@ function createWindow() {
   }
 }
 
+// 文件选择
+ipcMain.handle('select-audio', async () => {
+  const result = await dialog.showOpenDialog({
+    properties: ['openFile'],
+    filters: [{ name: '音频文件', extensions: ['mp3', 'wav', 'flac', 'ogg', 'm4a'] }],
+  })
+  if (result.canceled || result.filePaths.length === 0) return null
+  const filePath = result.filePaths[0]
+  const fileName = require('path').basename(filePath)
+  return { filePath, fileName }
+})
+
+// 角色音频路径映射
+const GAME_FOLDER_MAP = {
+  '原神': '原神',
+  '崩坏3': '崩坏3',
+  '崩坏：星穹铁道': '星穹铁道',
+  '绝区零': '绝区零',
+  '鸣潮': '鸣潮',
+  '🎨 自定义': '自定义',
+}
+
+const EMOTION_PATTERNS = [
+  /^【(.+?)_.+?】/,
+  /^(.+?)-/,
+]
+
+function parseEmotion(filename) {
+  for (const pattern of EMOTION_PATTERNS) {
+    const m = filename.match(pattern)
+    if (m) return m[1]
+  }
+  return null
+}
+
+function getCharacterDir(game, name) {
+  const folder = GAME_FOLDER_MAP[game]
+  if (!folder) return null
+  return path.join(__dirname, 'characters', folder, name)
+}
+
+ipcMain.handle('get-character-emotions', async (_event, { game, name }) => {
+  const dir = getCharacterDir(game, name)
+  if (!dir) return { status: 'error', error: '未知的游戏' }
+  try {
+    const files = fs.readdirSync(dir).filter(f => f.endsWith('.wav'))
+    const emotions = [...new Set(files.map(f => parseEmotion(f)).filter(Boolean))]
+    return { status: 'ok', data: emotions.length > 0 ? emotions : ['默认'] }
+  } catch (err) {
+    return { status: 'error', error: err.message }
+  }
+})
+
+ipcMain.handle('get-character-path', async (_event, { game, name, emotion }) => {
+  const dir = getCharacterDir(game, name)
+  if (!dir) {
+    console.log(`[TTS] getCharacterPath: 未知的游戏 game=${game} name=${name}`)
+    return { status: 'error', error: '未知的游戏' }
+  }
+  try {
+    const files = fs.readdirSync(dir).filter(f => f.endsWith('.wav'))
+    if (files.length === 0) {
+      console.log(`[TTS] getCharacterPath: 目录无文件 dir=${dir}`)
+      return { status: 'error', error: '目录中没有音频文件' }
+    }
+    for (const f of files) {
+      if (parseEmotion(f) === emotion) {
+        return { status: 'ok', path: path.join(dir, f) }
+      }
+    }
+    return { status: 'ok', path: path.join(dir, files[0]) }
+  } catch (err) {
+    console.log(`[TTS] getCharacterPath: 读取失败 dir=${dir} err=${err.message}`)
+    return { status: 'error', error: err.message }
+  }
+})
+
+// MongoDB 操作
+const MONGODB_URI = 'mongodb+srv://reader:ZR32pnCzJzxTq.S@cluster0.zjwm1on.mongodb.net/dubbing_chars'
+
+function mongoCall(msg) {
+  if (!mongoWorker) return Promise.resolve({ status: 'error', error: 'Mongo worker 未启动' })
+  const replyId = ++replyIdCounter
+  return new Promise((resolve) => {
+    pendingReplies.set(replyId, resolve)
+    mongoWorker.send({ ...msg, _replyId: replyId })
+    setTimeout(() => {
+      if (pendingReplies.delete(replyId)) {
+        resolve({ status: 'error', error: '操作超时' })
+      }
+    }, 15000)
+  })
+}
+
+ipcMain.handle('mongo-connect', async () => mongoCall({ type: 'connect', uri: MONGODB_URI }))
+ipcMain.handle('mongo-get-characters', async () => mongoCall({ type: 'getCharacters' }))
+ipcMain.handle('mongo-get-tags', async () => mongoCall({ type: 'getTags' }))
+
+// 自定义配音员：迁移音频文件
+ipcMain.handle('migrate-custom-speaker', async (_event, { name, sourceFilename, voiceType, temperament }) => {
+  // PyInstaller 打包的二进制会把 api_output 放在 _internal/ 下
+  const apiOutputDir = fs.existsSync(path.join(serverDir, 'api_output'))
+    ? path.join(serverDir, 'api_output')
+    : path.join(serverDir, '_internal', 'api_output')
+  const src = path.join(apiOutputDir, sourceFilename)
+  const destDir = path.join(__dirname, 'characters', '自定义', name)
+  const destFile = path.join(destDir, `${name}.wav`)
+  const metaFile = path.join(destDir, '.meta.json')
+
+  try {
+    if (!fs.existsSync(src)) return { status: 'error', error: '源文件不存在' }
+    fs.mkdirSync(destDir, { recursive: true })
+    fs.copyFileSync(src, destFile)
+    // 写元数据文件，localStorage 丢了也能恢复（存绝对路径，最稳）
+    fs.writeFileSync(metaFile, JSON.stringify({
+      id: `custom_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+      name,
+      voiceType: voiceType || '',
+      temperament: temperament || '',
+      ref_audio: destFile,
+      createdAt: new Date().toISOString(),
+    }))
+    return { status: 'ok', path: destFile }
+  } catch (err) {
+    return { status: 'error', error: err.message }
+  }
+})
+
+// 自定义配音员：从 characters/自定义/ 恢复数据
+ipcMain.handle('recover-custom-speakers', async () => {
+  const customDir = path.join(__dirname, 'characters', '自定义')
+  try {
+    if (!fs.existsSync(customDir)) return { status: 'ok', data: [] }
+    const speakers = fs.readdirSync(customDir, { withFileTypes: true })
+      .filter(d => d.isDirectory())
+      .map(d => {
+        // 优先读 .meta.json
+        const metaPath = path.join(customDir, d.name, '.meta.json')
+        try {
+          return JSON.parse(fs.readFileSync(metaPath, 'utf-8'))
+        } catch {
+          // 没有 .meta.json 也兜个底（旧版迁移的配音员）——用绝对路径
+          const wavPath = path.join(customDir, d.name, `${d.name}.wav`)
+          return {
+            id: `custom_recovered_${Date.now()}_${d.name}`,
+            name: d.name,
+            voiceType: '',
+            temperament: '',
+            ref_audio: wavPath,
+            createdAt: new Date().toISOString(),
+          }
+        }
+      })
+      .filter(Boolean)
+    return { status: 'ok', data: speakers }
+  } catch (err) {
+    return { status: 'error', error: err.message }
+  }
+})
+
 app.whenReady().then(async () => {
   try {
     startServer()
+    startMongoWorker()
     console.log('[TTS] 等待服务就绪...')
     await waitForServer()
     console.log('[TTS] 服务就绪')
@@ -168,14 +373,10 @@ app.whenReady().then(async () => {
 })
 
 app.on('window-all-closed', () => {
-  stopServer()
   if (process.platform !== 'darwin') app.quit()
 })
 
 app.on('will-quit', () => {
   stopServer()
-})
-
-app.on('before-quit', () => {
-  stopServer()
+  stopMongoWorker()
 })

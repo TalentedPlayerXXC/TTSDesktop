@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Input, Button, Select, message } from 'antd'
 import {
   SearchOutlined,
@@ -15,16 +15,39 @@ import {
   UserSwitchOutlined,
 } from '@ant-design/icons'
 import IconTTS from '../components/IconTTS'
+import { loadCustomSpeakers, saveCustomSpeaker, deleteCustomSpeaker } from '../services/customSpeaker'
+import { getSessionCache, setSessionCache } from '../services/sessionCache'
+import { clone, batchClone, voxClone, ensureModelLoaded, getOutputUrl } from '../services/index'
+import type { BatchCloneItem } from '../services/types'
+import CyberpunkLoading from '../components/CyberpunkLoading'
 import './index.css'
 const { TextArea } = Input
 
 type Mode = 'single' | 'multi' | 'emotion'
 
+interface CharacterRaw {
+  _id: string
+  name: string
+  gender: string
+  voiceType: string
+  temperament: string
+  game?: string
+}
+
+interface TagItem {
+  _id: string
+  label: string
+  enum: string
+}
+
 interface Speaker {
   id: string
   name: string
-  gender: 'male' | 'female'
+  gender: 'male' | 'female' | '男' | '女'
   tags: string[]
+  voiceType?: string
+  temperament?: string
+  game?: string
 }
 
 interface SpeakerType {
@@ -32,6 +55,8 @@ interface SpeakerType {
   label: string
   isFavorite?: boolean
   isHot?: boolean
+  isCustom?: boolean
+  isDynamic?: boolean
 }
 
 interface MultiLine {
@@ -44,36 +69,6 @@ const MODES: { key: Mode; label: string }[] = [
   { key: 'single', label: '单人配音' },
   { key: 'multi', label: '多人配音' },
   { key: 'emotion', label: '情感配音' },
-]
-
-const SPEAKER_TYPES: SpeakerType[] = [
-  { key: 'favorite', label: '我的收藏', isFavorite: true },
-  { key: 'all', label: '全部' },
-  { key: 'male', label: '男声' },
-  { key: 'female', label: '女声' },
-  { key: 'affection', label: '情感' },
-  { key: 'dialect', label: '方言' },
-  { key: 'anime', label: '二次元' },
-  { key: 'ancient', label: '古风' },
-  { key: 'news', label: '新闻' },
-  { key: 'cartoon', label: '童声' },
-  { key: 'custom', label: '自定义' },
-  { key: 'popular', label: '热门推荐', isHot: true },
-]
-
-const MOCK_SPEAKERS: Speaker[] = [
-  { id: '1', name: '悠然', gender: 'female', tags: ['情感', '温柔'] },
-  { id: '2', name: '清风', gender: 'male', tags: ['磁性', '深沉'] },
-  { id: '3', name: '小糖', gender: 'female', tags: ['二次元', '活泼'] },
-  { id: '4', name: '阿杰', gender: 'male', tags: ['古风', '中二'] },
-  { id: '5', name: '沐晴', gender: 'female', tags: ['新闻', '端庄'] },
-  { id: '6', name: '老刘', gender: 'male', tags: ['方言', '亲切'] },
-  { id: '7', name: '灵儿', gender: 'female', tags: ['童声', '可爱'] },
-  { id: '8', name: '凯旋', gender: 'male', tags: ['新闻', '浑厚'] },
-  { id: '9', name: '诗雅', gender: 'female', tags: ['古风', '婉约'] },
-  { id: '10', name: '大鹏', gender: 'male', tags: ['情感', '治愈'] },
-  { id: '11', name: '晓梦', gender: 'female', tags: ['二次元', '元气'] },
-  { id: '12', name: '逸飞', gender: 'male', tags: ['磁性', '温柔'] },
 ]
 
 const EMOTIONS = [
@@ -104,27 +99,161 @@ const TTSComponent = () => {
   // 情感
   const [selectedEmotions, setSelectedEmotions] = useState<string[]>([])
 
-  const filteredSpeakers = useMemo(() => {
-    let list = MOCK_SPEAKERS
+  // 数据库 & 自定义数据
+  const [characters, setCharacters] = useState<Speaker[]>([])
+  const [tags, setTags] = useState<TagItem[]>([])
+  const [charactersLoading, setCharactersLoading] = useState(false)
+  const [availableEmotions, setAvailableEmotions] = useState<string[]>([])
+  const [selectedEmotion, setSelectedEmotion] = useState('')
+  const [showAllTags, setShowAllTags] = useState(false)
+  const [synthesizing, setSynthesizing] = useState(false)
+  const [audioUrl, setAudioUrl] = useState('')
+  const [audioFilename, setAudioFilename] = useState('')
 
+  useEffect(() => {
+    if (!window.electronAPI) return
+
+    const cached = getSessionCache()
+    if (cached) {
+      const chars = Array.isArray(cached.characters) ? cached.characters : []
+      setCharacters(chars.map((c: any) => ({
+        id: c._id || c.id,
+        name: c.name,
+        gender: c.gender,
+        tags: [c.voiceType, c.temperament].filter(Boolean),
+        voiceType: c.voiceType || '',
+        temperament: c.temperament || '',
+        game: c.game || '',
+      })))
+      setTags(Array.isArray(cached.tags) ? cached.tags : [])
+      // 从 localStorage 合并自定义配音员
+      const customSpeakers = loadCustomSpeakers()
+      if (customSpeakers.length > 0) {
+        setCharacters(prev => [...prev, ...customSpeakers.map(s => ({
+          id: s.id,
+          name: s.name,
+          gender: ['萝莉', '少女', '御姐'].includes(s.voiceType) ? '女' : '男',
+          tags: [s.voiceType, s.temperament].filter(Boolean),
+          voiceType: s.voiceType || '',
+          temperament: s.temperament || '',
+          game: '🎨 自定义',
+        }))])
+      }
+      // 文件系统恢复仍然执行（处理 localStorage 被清但文件还在的情况）
+      runRecovery()
+      return
+    }
+
+    setCharactersLoading(true)
+    Promise.all([
+      window.electronAPI.mongo.getCharacters(),
+      window.electronAPI.mongo.getTags(),
+    ]).then(([charRes, tagRes]) => {
+      // 缓存 MongoDB 数据（不含自定义，因为自定义可能随时增减）
+      if (charRes.status === 'ok' && tagRes.status === 'ok') {
+        setSessionCache(charRes.data || [], tagRes.data || [])
+      }
+      if (charRes.status === 'ok' && charRes.data?.length) {
+        const mapped = charRes.data.map((c: CharacterRaw) => ({
+          id: c._id,
+          name: c.name,
+          gender: c.gender,
+          tags: [c.voiceType, c.temperament].filter(Boolean),
+          voiceType: c.voiceType || '',
+          temperament: c.temperament || '',
+          game: c.game || '',
+        }))
+        const custom = loadCustomSpeakers()
+        const merged = custom.length > 0
+          ? [...mapped, ...custom.map(s => ({
+              id: s.id,
+              name: s.name,
+              gender: ['萝莉', '少女', '御姐'].includes(s.voiceType) ? '女' : '男',
+              tags: [s.voiceType, s.temperament].filter(Boolean),
+              voiceType: s.voiceType || '',
+              temperament: s.temperament || '',
+              game: '🎨 自定义',
+            }))]
+          : mapped
+        setCharacters(merged)
+      }
+      if (tagRes.status === 'ok' && tagRes.data?.length) {
+        setTags(tagRes.data)
+      }
+    }).catch(() => {}).finally(() => setCharactersLoading(false))
+
+    runRecovery()
+  }, [])
+
+  function runRecovery() {
+    if (window.electronAPI?.recoverCustomSpeakers) {
+      window.electronAPI.recoverCustomSpeakers().then(res => {
+        if (res.status === 'ok' && res.data?.length) {
+          const existing = loadCustomSpeakers()
+          const existingNames = new Set(existing.map(s => s.name))
+          // 同步：删除 localStorage 中但文件系统中不存在的条目
+          const recoveredNames = new Set(res.data.map(s => s.name))
+          existing.forEach(s => { if (!recoveredNames.has(s.name)) deleteCustomSpeaker(s.id) })
+          // 新增：文件系统中有但 localStorage 中没有的
+          res.data.forEach(s => { if (!existingNames.has(s.name)) saveCustomSpeaker(s) })
+          setCharacters(prev => {
+            const currentNames = new Set(prev.map(c => c.name))
+            // 先从列表移除已删除的
+            let updated = prev.filter(c => c.game !== '🎨 自定义' || recoveredNames.has(c.name))
+            // 再加入新的
+            const newOnes = res.data.filter(s => !currentNames.has(s.name)).map(s => ({
+              id: s.id,
+              name: s.name,
+              gender: ['萝莉', '少女', '御姐'].includes(s.voiceType) ? '女' : '男',
+              tags: [s.voiceType, s.temperament].filter(Boolean),
+              voiceType: s.voiceType || '',
+              temperament: s.temperament || '',
+              game: '🎨 自定义',
+            }))
+            return newOnes.length ? [...updated, ...newOnes] : updated
+          })
+        } else {
+          // 文件系统没有任何自定义配音员了，清空 localStorage
+          const existing = loadCustomSpeakers()
+          existing.forEach(s => deleteCustomSpeaker(s.id))
+          setCharacters(prev => prev.filter(c => c.game !== '🎨 自定义'))
+        }
+      }).catch(() => {})
+    }
+  }
+
+  const speakerTypes = useMemo((): SpeakerType[] => {
+    const fixed: SpeakerType[] = [
+      { key: 'favorite', label: '我的收藏', isFavorite: true },
+      { key: 'custom', label: '自定义', isCustom: true },
+      { key: 'all', label: '全部' },
+      { key: 'male', label: '男声' },
+      { key: 'female', label: '女声' },
+    ]
+    const dynamic = tags.map(t => ({ key: t.enum, label: t.label, isDynamic: true }))
+    return [...fixed, ...dynamic]
+  }, [tags])
+
+  const filteredSpeakers = useMemo(() => {
+    let list = characters
     if (activeType === 'favorite') {
       list = list.filter(s => favorites.has(s.id))
+    } else if (activeType === 'custom') {
+      list = list.filter(s => s.game === '🎨 自定义')
     } else if (activeType === 'male') {
-      list = list.filter(s => s.gender === 'male')
+      list = list.filter(s => s.gender === '男')
     } else if (activeType === 'female') {
-      list = list.filter(s => s.gender === 'female')
+      list = list.filter(s => s.gender === '女')
     } else if (activeType !== 'all') {
-      const typeLabel = SPEAKER_TYPES.find(t => t.key === activeType)?.label || ''
-      list = list.filter(s => s.tags.some(tag => tag.includes(typeLabel)))
+      const label = speakerTypes.find(t => t.key === activeType)?.label || ''
+      list = list.filter(s => s.voiceType === label || s.temperament === label)
     }
-
     if (searchText.trim()) {
-      const keyword = searchText.trim().toLowerCase()
-      list = list.filter(s => s.name.includes(keyword))
+      const kw = searchText.trim().toLowerCase()
+      list = list.filter(s => s.name.includes(kw))
     }
-
     return list
-  }, [activeType, searchText, favorites])
+  }, [activeType, searchText, favorites, characters, speakerTypes])
 
   const toggleFavorite = (id: string) => {
     setFavorites(prev => {
@@ -135,8 +264,17 @@ const TTSComponent = () => {
     })
   }
 
-  const handleSelectSpeaker = (id: string) => {
+  const handleSelectSpeaker = async (id: string) => {
     setSelectedSpeaker(id)
+    setSelectedEmotion('')
+    setAvailableEmotions([])
+    const speaker = characters.find(c => c.id === id)
+    if (!speaker?.game || !window.electronAPI) return
+    if (speaker.game === '🎨 自定义') return
+    const res = await window.electronAPI.getCharacterEmotions({ game: speaker.game, name: speaker.name })
+    if (res.status === 'ok' && res.data) {
+      setAvailableEmotions(res.data)
+    }
   }
 
   const addLine = () => {
@@ -163,27 +301,118 @@ const TTSComponent = () => {
     )
   }
 
-  const handleSynthesize = () => {
+  const handleSynthesize = async () => {
     if (mode === 'single') {
       if (!text.trim()) { messageApi.warning('请输入配音文本'); return }
       if (!selectedSpeaker) { messageApi.warning('请选择一个配音员'); return }
-      messageApi.success('开始合成...')
+      const speaker = characters.find(c => c.id === selectedSpeaker)
+      if (!speaker) return
+
+      setSynthesizing(true)
+      try {
+        let refAudio = ''
+        if (speaker.game === '🎨 自定义') {
+          const pathRes = await window.electronAPI?.getCharacterPath({ game: '🎨 自定义', name: speaker.name, emotion: '默认' })
+          if (pathRes?.status === 'ok') refAudio = pathRes.path
+          else { messageApi.error('获取自定义角色音频失败'); setSynthesizing(false); return }
+        } else {
+          const pathRes = await window.electronAPI?.getCharacterPath({ game: speaker.game || '', name: speaker.name, emotion: selectedEmotion || '默认' })
+          if (pathRes?.status === 'ok') refAudio = pathRes.path
+          else { messageApi.error('获取角色音频失败'); setSynthesizing(false); return }
+        }
+
+        const loaded = await ensureModelLoaded('tts')
+        if (!loaded) { messageApi.error('模型加载失败'); setSynthesizing(false); return }
+
+        const res = await clone({ text: text.trim(), ref_audio: refAudio })
+        if (res.data.success) {
+          setAudioUrl(getOutputUrl(res.data.audio_url))
+          setAudioFilename(res.data.filename)
+          messageApi.success('合成完成！')
+        } else {
+          messageApi.error('合成失败')
+        }
+      } catch (e: any) {
+        messageApi.error(e?.message || '合成出错')
+      }
+      setSynthesizing(false)
+
     } else if (mode === 'multi') {
       const validLines = lines.filter(l => l.speakerId && l.text.trim())
       if (validLines.length === 0) { messageApi.warning('请至少添加一个角色并填写内容'); return }
-      messageApi.success('开始合成...')
+
+      setSynthesizing(true)
+      try {
+        const items: BatchCloneItem[] = []
+        for (const line of validLines) {
+          const speaker = characters.find(c => c.id === line.speakerId)
+          if (!speaker) continue
+          const pathRes = await window.electronAPI?.getCharacterPath({ game: speaker.game || '', name: speaker.name, emotion: '默认' })
+          if (pathRes?.status === 'ok') {
+            items.push({ text: line.text.trim(), ref_audio: pathRes.path })
+          }
+        }
+        if (items.length === 0) { messageApi.error('无法获取角色音频路径'); setSynthesizing(false); return }
+
+        const loaded = await ensureModelLoaded('tts')
+        if (!loaded) { messageApi.error('模型加载失败'); setSynthesizing(false); return }
+
+        const res = await batchClone({ items, merge: true })
+        if (res.data.success) {
+          if (res.data.merged) {
+            setAudioUrl(getOutputUrl(res.data.merged.audio_url))
+            setAudioFilename(res.data.merged.filename)
+          } else if (res.data.files?.length > 0) {
+            setAudioUrl(getOutputUrl(res.data.files[0].audio_url))
+            setAudioFilename(res.data.files[0].filename)
+          }
+          messageApi.success(`合成完成！共 ${res.data.generated} 条`)
+        } else {
+          messageApi.error('合成失败')
+        }
+      } catch (e: any) {
+        messageApi.error(e?.message || '合成出错')
+      }
+      setSynthesizing(false)
+
     } else if (mode === 'emotion') {
       if (!text.trim()) { messageApi.warning('请输入配音文本'); return }
       if (!selectedSpeaker) { messageApi.warning('请选择一个配音员'); return }
-      if (selectedEmotions.length === 0) { messageApi.warning('请选择情感风格'); return }
-      messageApi.success('开始合成...')
+      const speaker = characters.find(c => c.id === selectedSpeaker)
+      if (!speaker) return
+
+      setSynthesizing(true)
+      try {
+        const pathRes = await window.electronAPI?.getCharacterPath({ game: speaker.game || '', name: speaker.name, emotion: selectedEmotion || '默认' })
+        let refAudio = ''
+        if (pathRes?.status === 'ok') refAudio = pathRes.path
+        else { messageApi.error('获取角色音频失败'); setSynthesizing(false); return }
+
+        const loaded = await ensureModelLoaded('voxcpm2')
+        if (!loaded) { messageApi.error('模型加载失败'); setSynthesizing(false); return }
+
+        const res = await voxClone({ text: text.trim(), ref_audio: refAudio, instruct: selectedEmotion || undefined })
+        if (res.data.success) {
+          setAudioUrl(getOutputUrl(res.data.audio_url))
+          setAudioFilename(res.data.filename)
+          messageApi.success('合成完成！')
+        } else {
+          messageApi.error('合成失败')
+        }
+      } catch (e: any) {
+        messageApi.error(e?.message || '合成出错')
+      }
+      setSynthesizing(false)
     }
   }
 
-  const speakerOptions = MOCK_SPEAKERS.map(s => ({
+  const speakerOptions = characters.map(s => ({
     value: s.id,
     label: s.name,
   }))
+
+  const fixedTypes = speakerTypes.filter(t => !t.isDynamic)
+  const dynamicTypes = speakerTypes.filter(t => t.isDynamic)
 
   return (
     <div className='tts'>
@@ -275,7 +504,7 @@ const TTSComponent = () => {
             </div>
           )}
 
-          {/* 情感：情感选择 */}
+          {/* 情感：情感风格 */}
           {mode === 'emotion' && (
             <div className='tts-section'>
               <div className='tts-section-title'><><SmileOutlined /> 情感风格</></div>
@@ -310,7 +539,7 @@ const TTSComponent = () => {
                 className='tts-speaker-search'
               />
               <div className='tts-speaker-types'>
-                {SPEAKER_TYPES.map(type => (
+                {fixedTypes.map(type => (
                   <button
                     key={type.key}
                     className={`tts-type-btn${activeType === type.key ? ' active' : ''}`}
@@ -322,11 +551,44 @@ const TTSComponent = () => {
                     {type.isHot && (
                       <FireFilled style={{ fontSize: 11, color: '#f59e0b' }} />
                     )}
+                    {type.isCustom && <span style={{ marginRight: 2 }}>🎨</span>}
                     {type.label}
                   </button>
                 ))}
+                {dynamicTypes.length > 0 && (
+                  <>
+                    {showAllTags && dynamicTypes.map(type => (
+                      <button
+                        key={type.key}
+                        className={`tts-type-btn${activeType === type.key ? ' active' : ''}`}
+                        onClick={() => setActiveType(type.key)}
+                      >
+                        {type.label}
+                      </button>
+                    ))}
+                    <button
+                      className='tts-type-btn tts-type-btn-more'
+                      onClick={() => setShowAllTags(!showAllTags)}
+                    >
+                      {showAllTags ? '收起 ▲' : '更多 ▼'}
+                    </button>
+                  </>
+                )}
               </div>
-              {filteredSpeakers.length === 0 ? (
+              {charactersLoading ? (
+                <div className='tts-speaker-list'>
+                  {Array.from({ length: 8 }).map((_, i) => (
+                    <div key={i} className='tts-speaker-skeleton-card'>
+                      <div className='tts-speaker-skeleton-avatar' />
+                      <div className='tts-speaker-skeleton-name' />
+                      <div className='tts-speaker-skeleton-tags'>
+                        <div className='tts-speaker-skeleton-tag' />
+                        <div className='tts-speaker-skeleton-tag' />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : filteredSpeakers.length === 0 ? (
                 <div className='tts-speaker-empty'>
                   <SoundOutlined className='tts-empty-icon' />
                   <p>
@@ -357,7 +619,7 @@ const TTSComponent = () => {
                         )}
                       </button>
                       <div
-                        className={`tts-speaker-avatar${speaker.gender === 'female' ? ' female' : ''}`}
+                        className={`tts-speaker-avatar${speaker.gender === 'female' || speaker.gender === '女' ? ' female' : ''}`}
                       >
                         {speaker.name.charAt(0)}
                       </div>
@@ -371,6 +633,22 @@ const TTSComponent = () => {
                       </div>
                     </div>
                   ))}
+                </div>
+              )}
+              {mode !== 'multi' && availableEmotions.length > 0 && (
+                <div className='tts-section' style={{ marginTop: 16 }}>
+                  <div className='tts-section-title'><><SmileOutlined /> 可用情感</></div>
+                  <div className='tts-emotion-tags'>
+                    {availableEmotions.map(e => (
+                      <span
+                        key={e}
+                        className={`tts-emotion-tag${selectedEmotion === e ? ' active' : ''}`}
+                        onClick={() => setSelectedEmotion(selectedEmotion === e ? '' : e)}
+                      >
+                        {e}
+                      </span>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
@@ -388,10 +666,10 @@ const TTSComponent = () => {
               ) : (
                 <div className='tts-multi-role-list'>
                   {lines.filter(l => l.speakerId).map(line => {
-                    const speaker = MOCK_SPEAKERS.find(s => s.id === line.speakerId)
+                    const speaker = characters.find(s => s.id === line.speakerId)
                     return (
                       <div key={line.id} className='tts-multi-role-item'>
-                        <div className={`tts-multi-role-avatar${speaker?.gender === 'female' ? ' female' : ''}`}>
+                        <div className={`tts-multi-role-avatar${speaker?.gender === 'female' || speaker?.gender === '女' ? ' female' : ''}`}>
                           {speaker?.name?.charAt(0) || '?'}
                         </div>
                         <div className='tts-multi-role-info'>
@@ -414,17 +692,25 @@ const TTSComponent = () => {
               onClick={handleSynthesize}
               className='tts-btn-primary'
             >
-              {mode === 'multi' ? '合并合成' : '合成试听'}
+              {synthesizing ? '合成中...' : (mode === 'multi' ? '合并合成' : '合成试听')}
             </Button>
           </div>
           <div className='tts-preview-center'>
-            <div className='tts-preview-placeholder'>
-              <SoundOutlined className='tts-preview-icon' />
-              <p>合成后音频将在此处播放</p>
-            </div>
+            {audioUrl ? (
+              <audio src={audioUrl} controls style={{ width: '100%' }} autoPlay />
+            ) : (
+              <div className='tts-preview-placeholder'>
+                <SoundOutlined className='tts-preview-icon' />
+                <p>合成后音频将在此处播放</p>
+              </div>
+            )}
           </div>
         </div>
       </div>
+
+      {synthesizing && (
+        <CyberpunkLoading visible={synthesizing} message='正在合成音频...' modelName='TTS' />
+      )}
     </div>
   )
 }

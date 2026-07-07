@@ -2,13 +2,13 @@
 export interface HealthResponse {
   status: string
   qwen3_loaded: boolean
-  whisper_loaded: boolean
+  stt_loaded: boolean
   voxcpm2_loaded: boolean
 }
 
 export interface ModelStatusResponse {
   qwen3: boolean
-  whisper: boolean
+  stt: boolean
   voxcpm2: boolean
 }
 
@@ -173,4 +173,31 @@ export interface FilesListResponse {
 // 错误
 export interface ApiError {
   detail: string
+}
+
+// 缓存管理
+export interface CacheStatusResponse {
+  total_files: number
+  total_bytes: number
+  total_mb: number
+  oldest_file: string
+  newest_file: string
+  oldest_age_hours: number
+}
+
+export interface CleanupRequest {
+  mode: 'all' | 'older_than' | 'by_size'
+  expire_hours?: number
+  max_size_mb?: number
+}
+
+export interface CleanupResponse {
+  success: boolean
+  mode: string
+  deleted_count: number
+  kept_count: number
+  freed_bytes: number
+  freed_mb: number
+  deleted_files: string[]
+  kept_files: string[]
 }
