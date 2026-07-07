@@ -38,3 +38,6 @@ release/*
 !release/.gitkeep
 characters/*
 !characters/.gitkeep
+
+# MongoDB connection config (contains DB URI, do not commit)
+db.js

@@ -12,10 +12,11 @@ The author is a clueless frontend dev who writes code like spaghetti, but hey, i
 
 ## Features
 
-- **🎬 Smart Dubbing** — Solo dubbing too boring? Try **Multi-Character Mode**: pick different voices and let them argue with each other. Or switch on **Emotion Mode** — happy, sad, angry, just pick your mood and go full method acting
+- **🎬 Smart Dubbing** — Solo, Multi-Character, and Emotion modes at your fingertips. Search and filter through 296+ voice actors, mark favorites, and add custom speakers. Emotion tags are automatically parsed from audio filenames
 - **🎭 One-Shot Cloning** — Throw in a reference audio and the AI will copy the voice faster than you can say "wait, that's illegal" (needs the `tts_serve_mlx` backend buddy)
-- **🎨 Voice Design** — No sliders, no knobs. Just type "a gentle, warm female voice" and the AI builds it on the fly
-- **⚙️ Preferences** — Themes, language, notifications. Make it yours
+- **🎨 Voice Design** — No sliders, no knobs. Just type "a gentle, warm female voice" and the AI builds it on the fly. Advanced params (inference steps, CFG) included
+- **📦 Custom Speakers** — One-click add from Voice Design to your speaker list, use them like any other character
+- **⚙️ Preferences** — Themes, language, cache management. Make it yours
 - **🛡️ Error Boundary** — Page crashed? No big deal. One click and you're back in business. (Even the author uses this regularly.)
 
 ## Tech Stack

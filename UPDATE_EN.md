@@ -2,6 +2,81 @@
 
 # Changelog
 
+## 2026-07-07
+
+### ✨ New Features
+
+#### 1. Custom Speaker System
+- Voice Design synthesized audio can now be added to the speaker list with one click
+- Audio files auto-migrate to `characters/自定义/` directory with filesystem recovery
+- Bidirectional sync between localStorage and filesystem: deleting a folder auto-removes it from the list
+
+#### 2. Dynamic Emotion Tags
+- Click a speaker to auto-parse emotion tags from audio filenames (`开心-xxx.wav` → 开心)
+- Displayed in both Solo and Emotion modes with single-tag selection
+- Custom speakers skip emotion loading automatically
+
+#### 3. Full Backend API Integration
+- Solo mode: `ensureModelLoaded('tts')` → `clone()`
+- Multi mode: `ensureModelLoaded('tts')` → `batchClone({ merge: true })`
+- Emotion mode: `ensureModelLoaded('voxcpm2')` → `voxClone(instruct)`
+- Auto-switches models (unload old → load new) when mode changes
+- Auto-plays synthesized audio on completion
+
+#### 4. Session-Based Data Cache
+- In-memory cache tied to app lifecycle — destroyed on exit
+- First load fetches from MongoDB, subsequent page visits within the same session are instant
+- Skeleton loading + CyberpunkLoading fullscreen animation
+
+#### 5. MongoDB Character Data
+- Loads 296+ characters from MongoDB Atlas (with voice type / temperament tags)
+- Dynamic filter bar: All / Male / Female / voice type tags / temperament tags
+- Search and favorites support
+
+### 🔧 Refactoring
+
+#### 1. Smart Dubbing (TTSComponent) Rewrite
+- Switched from MOCK_SPEAKERS to real MongoDB data
+- New sessionCache mechanism
+- Custom speakers injected into character list
+- Filesystem recovery with bidirectional sync
+- CSS fully migrated to global variables with dark mode support
+- Skeleton loading placeholders
+
+#### 2. Voice Design Fixes
+- Fixed `handleAddToSpeaker` variable scoping bug (`migrateRes` inaccessible outside if block)
+- Now actually calls `voxDesign` API (was a stub)
+- Advanced params (inference steps, CFG) now passed to the API
+
+### 🎨 UI/UX Polish
+
+- Removed global `user-select: none` — text is selectable again
+- Collapsible voice type / temperament tag panel in speaker filters
+- Synthesize button shows "Synthesizing..." text during API call
+- Dark mode adapted for all new UI elements
+- Removed all saveHistory-related code
+
+### 📁 New Files
+
+```
+src/
+├── services/
+│   ├── sessionCache.ts          # In-memory cache (new)
+│   └── customSpeaker.ts         # Custom speaker CRUD (new)
+.gitignore updated with characters/ directory
+mongoose added to dependencies
+```
+
+### 🔧 Other Changes
+
+- main.js: MongoDB Worker, GAME_FOLDER_MAP fix, migrate/recover IPC, removed saveHistory
+- preload.js: custom speaker IPC bridges, removed saveHistory
+- mongo-worker.js: removed history model
+- SettingsComponent: cache management (getCacheStatus / cleanupCache)
+- Deleted `src/backup.tsx`, `src/components/CrashTest.tsx`
+
+---
+
 ## 2025-07-03
 
 ### ✨ New Features

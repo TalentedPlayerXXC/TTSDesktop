@@ -267,7 +267,7 @@ ipcMain.handle('get-character-path', async (_event, { game, name, emotion }) => 
 })
 
 // MongoDB 操作
-const MONGODB_URI = 'mongodb+srv://reader:ZR32pnCzJzxTq.S@cluster0.zjwm1on.mongodb.net/dubbing_chars'
+const { MONGODB_URI } = require('./db')
 
 function mongoCall(msg) {
   if (!mongoWorker) return Promise.resolve({ status: 'error', error: 'Mongo worker 未启动' })

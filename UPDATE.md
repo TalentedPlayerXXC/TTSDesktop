@@ -2,6 +2,81 @@
 
 # 更新日志
 
+## 2026-07-07
+
+### ✨ 新功能
+
+#### 1. 自定义配音员系统
+- 声音设计页面合成的音频可一键「加入配音员列表」，像普通角色一样在智能配音中使用
+- 音频文件自动迁移到 `characters/自定义/` 目录，支持文件系统恢复
+- localStorage + 文件系统双向同步：增删自定义角色自动同步，删除文件夹则自动从列表移除
+
+#### 2. 情感标签动态解析
+- 点击配音员后，从角色文件夹的音频文件名自动解析情感标签（`开心-xxx.wav` → 开心）
+- 单人模式与情感模式均可展示，支持单标签选择
+- 自定义配音员没有情感标签，自动跳过
+
+#### 3. 智能配音全面接入后端 API
+- 单人模式：`ensureModelLoaded('tts')` → `clone()`
+- 多人模式：`ensureModelLoaded('tts')` → `batchClone({ merge: true })`
+- 情感模式：`ensureModelLoaded('voxcpm2')` → `voxClone(instruct)`
+- 切换模式自动卸载旧模型加载新模型，保证干净状态
+- 合成完成后自动播放音频
+
+#### 4. 角色数据缓存（SessionCache）
+- 应用生命周期内的内存缓存，关闭即销毁
+- 首次打开从 MongoDB 加载，同会话内切页面秒开，不重复请求
+- 骨架屏加载动画 + 赛博朋克全屏加载动效
+
+#### 5. MongoDB 角色数据接入
+- 从 MongoDB Atlas 加载 296+ 角色数据（含声线/气质标签）
+- 筛选栏动态生成：全部 / 男声 / 女声 / 声线标签 / 气质标签
+- 支持搜索、收藏
+
+### 🔧 功能重构
+
+#### 1. 智能配音（TTSComponent）大改
+- 从 MOCK_SPEAKERS 改为 MongoDB 真实数据加载
+- 新增 sessionCache 内存缓存机制
+- 自定义配音员注入角色列表
+- 文件系统恢复双向同步（增删联动）
+- CSS 全面采用全局变量，支持明暗主题
+- 骨架屏加载占位
+
+#### 2. 声音设计（VoiceDesign）修复
+- 修复 `handleAddToSpeaker` 中变量作用域导致的 bug（`migrateRes` 访问不到）
+- 实际调用 `voxDesign` API（之前是 stub）
+- 高级参数（推理步数、CFG 值）实际传入请求
+
+### 🎨 UI/UX 优化
+
+- 全局取消 `user-select: none`，恢复文本可选
+- 配音员筛选栏支持展开/收起声线气质标签
+- 合成按钮改为「合成中...」文字反馈
+- 暗色模式适配全部新增 UI 元素
+- 删除 saveHistory 相关所有代码
+
+### 📁 新增文件
+
+```
+src/
+├── services/
+│   ├── sessionCache.ts          # 内存缓存（新增）
+│   └── customSpeaker.ts         # 自定义配音员 CRUD（新增）
+.gitignore 加入 characters/ 目录
+mongoose 加入依赖
+```
+
+### 🔧 其他调整
+
+- main.js：新增 MongoDB Worker、GAME_FOLDER_MAP 修复、migrate/recover IPC、移除 saveHistory
+- preload.js：新增自定义配音员 IPC 桥、移除 saveHistory
+- mongo-worker.js：移除 history 模型
+- SettingsComponent：缓存管理（getCacheStatus / cleanupCache）
+- 删除 `src/backup.tsx`、`src/components/CrashTest.tsx`
+
+---
+
 ## 2025-07-03
 
 ### ✨ 新功能
