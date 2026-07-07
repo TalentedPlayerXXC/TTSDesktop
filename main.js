@@ -156,9 +156,14 @@ function startMongoWorker() {
 
 function stopMongoWorker() {
   if (!mongoWorker) return
+  // 先发断开请求，等 1s 让 MongoDB 优雅断开
   mongoWorker.send({ type: 'disconnect' })
-  mongoWorker.kill()
-  mongoWorker = null
+  setTimeout(() => {
+    if (mongoWorker) {
+      mongoWorker.kill()
+      mongoWorker = null
+    }
+  }, 1000)
 }
 
 function createWindow() {
@@ -357,26 +362,49 @@ app.whenReady().then(async () => {
     await waitForServer()
     console.log('[TTS] 服务就绪')
 
-    console.log('[TTS] 加载 Qwen3 TTS + ASR 模型...')
-    await unloadTTTModel()
+    console.log('[TTS] 加载 Qwen3 TTS 模型...')
     const loaded = await loadTTTModel()
     if (!loaded) {
-      console.error('[TTS] 模型加载失败')
+      console.error('[TTS] 模型加载失败，渲染进程会按需重试')
     } else {
       console.log('[TTS] 模型加载完成')
     }
   } catch (err) {
-    console.error('[TTS] 启动失败:', err.message)
+    console.error('[TTS] 服务启动失败:', err.message)
+    console.log('[TTS] 渲染进程将以离线模式启动')
   }
 
   createWindow()
 })
 
+// macOS 关窗口 → 停掉后端服务，但保留进程（标准 macOS 行为）
+// 其他平台 → 直接退出
 app.on('window-all-closed', () => {
+  stopServer()
+  stopMongoWorker()
   if (process.platform !== 'darwin') app.quit()
 })
 
-app.on('will-quit', () => {
-  stopServer()
-  stopMongoWorker()
+// macOS 点击 Dock 图标 → 重启服务 + 重建窗口
+app.on('activate', () => {
+  if (BrowserWindow.getAllWindows().length === 0) {
+    startServer()
+    startMongoWorker()
+    createWindow()
+  }
+})
+
+// 应用退出前强制清理（等所有异步清理完成再退）
+app.on('will-quit', (event) => {
+  event.preventDefault()
+  const forceExit = setTimeout(() => app.exit(), 8000)
+
+  stopServer()    // SIGTERM → 5s → SIGKILL（内部自带 setTimeout）
+  stopMongoWorker() // 发 disconnect → 1s → kill
+
+  // 等所有清理完成再退
+  setTimeout(() => {
+    clearTimeout(forceExit)
+    app.exit()
+  }, 6500) // 大于 stopServer 的 5s + stopMongoWorker 的 1s
 })

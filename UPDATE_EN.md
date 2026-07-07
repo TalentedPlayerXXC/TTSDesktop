@@ -43,7 +43,21 @@
 - CSS fully migrated to global variables with dark mode support
 - Skeleton loading placeholders
 
-#### 2. Voice Design Fixes
+#### 2. Model Lifecycle Management
+- New `getCurrentModel()` export for global model state tracking
+- `ensureModelLoaded` keeps skip optimization: returns immediately if model already matches
+- Mode tabs (Single/Multi/Emotion) pre-load the required model in the background
+- CyberpunkLoading animation shown during model switching
+- One-Shot Clone / Voice Design pages also benefit from global model tracking
+
+#### 3. Electron Main Process Lifecycle Rewrite
+- Removed redundant `unloadTTTModel()` on startup
+- `stopMongoWorker` now sends disconnect and waits 1s before kill
+- `will-quit` uses `event.preventDefault()` + async cleanup + `app.exit()` to ensure all child processes terminate
+- macOS: closing window stops backend services, clicking Dock icon restarts them
+- MongoDB URI extracted to `db.js` (gitignored), with `db.example.js` template committed
+
+#### 4. Voice Design Fixes
 - Fixed `handleAddToSpeaker` variable scoping bug (`migrateRes` inaccessible outside if block)
 - Now actually calls `voxDesign` API (was a stub)
 - Advanced params (inference steps, CFG) now passed to the API
@@ -53,8 +67,10 @@
 - Removed global `user-select: none` — text is selectable again
 - Collapsible voice type / temperament tag panel in speaker filters
 - Synthesize button shows "Synthesizing..." text during API call
-- Dark mode adapted for all new UI elements
+- Dark mode adapted for all new UI elements (including One-Shot Clone page)
 - Removed all saveHistory-related code
+- Emotion tags moved from right column to below the text input (left column) for smoother workflow: type → pick emotion → pick speaker → synthesize
+- Fixed emotion tag flickering when switching speakers (no longer clears before loading)
 
 ### 📁 New Files
 
@@ -63,7 +79,9 @@ src/
 ├── services/
 │   ├── sessionCache.ts          # In-memory cache (new)
 │   └── customSpeaker.ts         # Custom speaker CRUD (new)
-.gitignore updated with characters/ directory
+db.example.js                    # MongoDB connection template (new, committed)
+db.js                            # Actual MongoDB connection (new, gitignored)
+.gitignore updated with db.js + characters/ directory
 mongoose added to dependencies
 ```
 

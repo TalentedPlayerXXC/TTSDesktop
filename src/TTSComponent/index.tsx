@@ -17,7 +17,7 @@ import {
 import IconTTS from '../components/IconTTS'
 import { loadCustomSpeakers, saveCustomSpeaker, deleteCustomSpeaker } from '../services/customSpeaker'
 import { getSessionCache, setSessionCache } from '../services/sessionCache'
-import { clone, batchClone, voxClone, ensureModelLoaded, getOutputUrl } from '../services/index'
+import { clone, batchClone, voxClone, ensureModelLoaded, getCurrentModel, getOutputUrl } from '../services/index'
 import type { BatchCloneItem } from '../services/types'
 import CyberpunkLoading from '../components/CyberpunkLoading'
 import './index.css'
@@ -107,6 +107,18 @@ const TTSComponent = () => {
   const [selectedEmotion, setSelectedEmotion] = useState('')
   const [showAllTags, setShowAllTags] = useState(false)
   const [synthesizing, setSynthesizing] = useState(false)
+  const [modelLoading, setModelLoading] = useState(false)
+  const [modelLoadingMsg, setModelLoadingMsg] = useState('')
+  const handleModeChange = async (newMode: Mode) => {
+    setMode(newMode)
+    const targetModel = newMode === 'emotion' ? 'voxcpm2' as const : 'tts' as const
+    if (getCurrentModel() !== targetModel) {
+      setModelLoading(true)
+      setModelLoadingMsg(targetModel === 'voxcpm2' ? '正在加载情感模型 VoxCPM2...' : '正在加载 TTS 模型...')
+      await ensureModelLoaded(targetModel)
+      setModelLoading(false)
+    }
+  }
   const [audioUrl, setAudioUrl] = useState('')
   const [audioFilename, setAudioFilename] = useState('')
 
@@ -266,11 +278,9 @@ const TTSComponent = () => {
 
   const handleSelectSpeaker = async (id: string) => {
     setSelectedSpeaker(id)
-    setSelectedEmotion('')
-    setAvailableEmotions([])
     const speaker = characters.find(c => c.id === id)
     if (!speaker?.game || !window.electronAPI) return
-    if (speaker.game === '🎨 自定义') return
+    if (speaker.game === '🎨 自定义') { setAvailableEmotions([]); return }
     const res = await window.electronAPI.getCharacterEmotions({ game: speaker.game, name: speaker.name })
     if (res.status === 'ok' && res.data) {
       setAvailableEmotions(res.data)
@@ -429,7 +439,7 @@ const TTSComponent = () => {
           <button
             key={m.key}
             className={`tts-mode-tab${mode === m.key ? ' active' : ''}`}
-            onClick={() => setMode(m.key)}
+            onClick={() => handleModeChange(m.key)}
           >
             {m.key === 'single' && <UserSwitchOutlined />}
             {m.key === 'multi' && <TeamOutlined />}
@@ -457,6 +467,24 @@ const TTSComponent = () => {
                 autoSize={{ minRows: 6, maxRows: 10 }}
               />
               <div className='tts-text-footer'>{text.length} / 5000</div>
+            </div>
+          )}
+
+          {/* 单人：可用情感 */}
+          {mode === 'single' && availableEmotions.length > 0 && (
+            <div className='tts-section'>
+              <div className='tts-section-title'><><SmileOutlined /> 可用情感</></div>
+              <div className='tts-emotion-tags'>
+                {availableEmotions.map(e => (
+                  <span
+                    key={e}
+                    className={`tts-emotion-tag${selectedEmotion === e ? ' active' : ''}`}
+                    onClick={() => setSelectedEmotion(selectedEmotion === e ? '' : e)}
+                  >
+                    {e}
+                  </span>
+                ))}
+              </div>
             </div>
           )}
 
@@ -635,22 +663,6 @@ const TTSComponent = () => {
                   ))}
                 </div>
               )}
-              {mode !== 'multi' && availableEmotions.length > 0 && (
-                <div className='tts-section' style={{ marginTop: 16 }}>
-                  <div className='tts-section-title'><><SmileOutlined /> 可用情感</></div>
-                  <div className='tts-emotion-tags'>
-                    {availableEmotions.map(e => (
-                      <span
-                        key={e}
-                        className={`tts-emotion-tag${selectedEmotion === e ? ' active' : ''}`}
-                        onClick={() => setSelectedEmotion(selectedEmotion === e ? '' : e)}
-                      >
-                        {e}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
             </div>
           )}
 
@@ -710,6 +722,9 @@ const TTSComponent = () => {
 
       {synthesizing && (
         <CyberpunkLoading visible={synthesizing} message='正在合成音频...' modelName='TTS' />
+      )}
+      {modelLoading && (
+        <CyberpunkLoading visible={modelLoading} message={modelLoadingMsg} />
       )}
     </div>
   )

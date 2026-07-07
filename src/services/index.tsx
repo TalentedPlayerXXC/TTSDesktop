@@ -69,6 +69,11 @@ export function unloadModel(data: ModelUnloadRequest) {
 // 确保模型已加载（先卸载再加载，保证干净状态）
 let currentLoadedModel: 'tts' | 'voxcpm2' | null = null
 
+// 导出当前模型，方便其他组件读取
+export function getCurrentModel(): 'tts' | 'voxcpm2' | null {
+  return currentLoadedModel
+}
+
 export async function ensureModelLoaded(model: 'tts' | 'voxcpm2'): Promise<boolean> {
   if (currentLoadedModel === model) return true
 

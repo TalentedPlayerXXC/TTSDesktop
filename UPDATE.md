@@ -43,7 +43,21 @@
 - CSS 全面采用全局变量，支持明暗主题
 - 骨架屏加载占位
 
-#### 2. 声音设计（VoiceDesign）修复
+#### 2. 模型生命周期管理
+- 新增 `getCurrentModel()` 导出，全局追踪当前加载的模型状态
+- `ensureModelLoaded` 保留跳过逻辑：模型已匹配时直接返回，不重复请求
+- 智能配音模式切换（单人/多人/情感）时在后台预加载对应模型
+- 加载模型时弹出 CyberpunkLoading 动画
+- 一句话克隆 / 声音设计页面同样受益于全局模型状态追踪
+
+#### 3. Electron 主进程生命周期重写
+- 启动时移除冗余的 `unloadTTTModel()` 调用
+- `stopMongoWorker` 先发断开请求，等 1s 再 kill，避免连接中断
+- `will-quit` 使用 `event.preventDefault()` + 异步清理 + `app.exit()` 确保全部子进程终止
+- macOS 关窗口时停掉后端服务，点 Dock 图标时自动重启
+- MongoDB 连接地址独立到 `db.js`（已 gitignore），提供 `db.example.js` 模板
+
+#### 4. 声音设计（VoiceDesign）修复
 - 修复 `handleAddToSpeaker` 中变量作用域导致的 bug（`migrateRes` 访问不到）
 - 实际调用 `voxDesign` API（之前是 stub）
 - 高级参数（推理步数、CFG 值）实际传入请求
@@ -53,8 +67,10 @@
 - 全局取消 `user-select: none`，恢复文本可选
 - 配音员筛选栏支持展开/收起声线气质标签
 - 合成按钮改为「合成中...」文字反馈
-- 暗色模式适配全部新增 UI 元素
+- 暗色模式适配全部新增 UI 元素（含一句话克隆页面）
 - 删除 saveHistory 相关所有代码
+- 情感标签从右侧移至左侧配音文本下方，操作流更顺畅：写词 → 选情感 → 选人 → 合成
+- 修复点击配音员时情感标签闪烁问题（不再先清空再加载）
 
 ### 📁 新增文件
 
@@ -63,7 +79,9 @@ src/
 ├── services/
 │   ├── sessionCache.ts          # 内存缓存（新增）
 │   └── customSpeaker.ts         # 自定义配音员 CRUD（新增）
-.gitignore 加入 characters/ 目录
+db.example.js                    # MongoDB 连接模板（新增，提交到仓库）
+db.js                            # MongoDB 实际连接（新增，已 gitignore）
+.gitignore 加入 db.js + characters/ 目录
 mongoose 加入依赖
 ```
 
