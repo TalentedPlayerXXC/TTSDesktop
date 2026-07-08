@@ -2,6 +2,15 @@
 
 # Changelog
 
+## 2026-07-08
+
+### 🐛 Bug Fixes
+
+- Fixed `ensureModelLoaded` in `src/services/index_fetch.tsx` unloading the wrong model (was unloading the target instead of the currently loaded model); added missing `if` guard
+- Fixed `loadTTTModel()` in `main.js` not unloading before loading on startup, preventing stacked models that could cause memory leaks
+
+---
+
 ## 2026-07-07
 
 ### ✨ New Features
@@ -92,6 +101,11 @@ mongoose added to dependencies
 - mongo-worker.js: removed history model
 - SettingsComponent: cache management (getCacheStatus / cleanupCache)
 - Deleted `src/backup.tsx`, `src/components/CrashTest.tsx`
+
+### 🐛 Bug Fixes
+
+- Fixed `ensureModelLoaded` in `src/services/index_fetch.tsx` unloading the wrong model (was unloading the target instead of the currently loaded model); added missing `if` guard
+- Fixed `loadTTTModel()` in `main.js` not unloading before loading on startup, preventing stacked models that could cause memory leaks
 
 ---
 

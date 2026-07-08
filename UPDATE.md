@@ -2,6 +2,15 @@
 
 # 更新日志
 
+## 2026-07-08
+
+### 🐛 Bug 修复
+
+- 修复 `src/services/index_fetch.tsx` 中 `ensureModelLoaded` 卸载错模型的问题（卸载了目标模型而非当前已加载模型），补齐 `if` 守卫
+- 修复 `main.js` 中 `loadTTTModel()` 启动加载前未先卸载的问题，防止叠模型造成内存泄漏
+
+---
+
 ## 2026-07-07
 
 ### ✨ 新功能
@@ -92,6 +101,11 @@ mongoose 加入依赖
 - mongo-worker.js：移除 history 模型
 - SettingsComponent：缓存管理（getCacheStatus / cleanupCache）
 - 删除 `src/backup.tsx`、`src/components/CrashTest.tsx`
+
+### 🐛 Bug 修复
+
+- 修复 `src/services/index_fetch.tsx` 中 `ensureModelLoaded` 卸载错模型的问题（卸载了目标模型而非当前已加载模型），补齐 `if` 守卫
+- 修复 `main.js` 中 `loadTTTModel()` 启动加载前未先卸载的问题，防止叠模型造成内存泄漏
 
 ---
 
