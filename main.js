@@ -231,10 +231,28 @@ function parseEmotion(filename) {
   return null
 }
 
+function getCharactersBase() {
+  return app.isPackaged
+    ? path.join(process.resourcesPath, 'characters')
+    : path.join(__dirname, 'characters')
+}
+
+function getCustomSpeakersDir() {
+  // 自定义配音员需要可写目录，打包后放 userData
+  const base = app.isPackaged
+    ? app.getPath('userData')
+    : __dirname
+  return path.join(base, 'characters', '自定义')
+}
+
 function getCharacterDir(game, name) {
   const folder = GAME_FOLDER_MAP[game]
   if (!folder) return null
-  return path.join(__dirname, 'characters', folder, name)
+  // 自定义配音员走可写目录，其他参考音频走资源目录
+  if (game === '🎨 自定义') {
+    return path.join(getCustomSpeakersDir(), name)
+  }
+  return path.join(getCharactersBase(), folder, name)
 }
 
 ipcMain.handle('get-character-emotions', async (_event, { game, name }) => {
@@ -301,7 +319,7 @@ ipcMain.handle('migrate-custom-speaker', async (_event, { name, sourceFilename, 
     ? path.join(serverDir, 'api_output')
     : path.join(serverDir, '_internal', 'api_output')
   const src = path.join(apiOutputDir, sourceFilename)
-  const destDir = path.join(__dirname, 'characters', '自定义', name)
+  const destDir = path.join(getCustomSpeakersDir(), name)
   const destFile = path.join(destDir, `${name}.wav`)
   const metaFile = path.join(destDir, '.meta.json')
 
@@ -326,7 +344,7 @@ ipcMain.handle('migrate-custom-speaker', async (_event, { name, sourceFilename, 
 
 // 自定义配音员：从 characters/自定义/ 恢复数据
 ipcMain.handle('recover-custom-speakers', async () => {
-  const customDir = path.join(__dirname, 'characters', '自定义')
+  const customDir = getCustomSpeakersDir()
   try {
     if (!fs.existsSync(customDir)) return { status: 'ok', data: [] }
     const speakers = fs.readdirSync(customDir, { withFileTypes: true })

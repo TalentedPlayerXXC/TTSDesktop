@@ -36,13 +36,27 @@
     "files": [
       "dist/**/*",
       "main.js",
+      "preload.js",
+      "mongo-worker.js",
+      "db.js",
+      "db.example.js",
       "package.json"
     ],
     "extraResources": [
       {
         "from": "tts_serve_mlx",
         "to": "tts_serve_mlx"
+      },
+      {
+        "from": "characters",
+        "to": "characters"
       }
+    ],
+    "asar": true,
+    "asarUnpack": [
+      "preload.js",
+      "mongo-worker.js",
+      "db.js"
     ],
     "mac": {
       "icon": "build/icon.png",
