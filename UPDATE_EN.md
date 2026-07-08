@@ -12,6 +12,8 @@
 
 - Fixed `ensureModelLoaded` in `index_fetch.tsx` unloading the wrong model (was unloading the target instead of the currently loaded one); added the missing `if` guard
 - Fixed `loadTTTModel()` in `main.js` not unloading before loading on startup, preventing stacked models that could leak memory
+- Added `characters/` to `extraResources` — reference audio for all 296 characters now works in packaged builds
+- Rewrote path logic: `getCharactersBase()` / `getCustomSpeakersDir()` — dev uses `__dirname`, packaged build reads reference audio from resources (read-only) and stores custom speakers in `userData` (writable)
 
 ---
 

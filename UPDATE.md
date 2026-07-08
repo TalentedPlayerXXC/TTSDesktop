@@ -12,6 +12,8 @@
 
 - 修了 `index_fetch.tsx` 里 `ensureModelLoaded` 卸载错模型的问题（卸载了目标模型而非当前已加载的），补齐了 `if` 守卫
 - 修了 `main.js` 里 `loadTTTModel()` 启动加载前没先卸载的问题，防止叠模型漏内存
+- `characters/` 加入 `extraResources`，打包后 296 个角色的参考音频可正常读取
+- 重写路径逻辑：`getCharactersBase()` / `getCustomSpeakersDir()`，开发用 `__dirname`，打包后参考音频走资源目录（只读）、自定义配音员走 `userData`（可写）
 
 ---
 
