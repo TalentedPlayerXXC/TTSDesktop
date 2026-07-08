@@ -170,7 +170,7 @@ function stopMongoWorker() {
 
 function createWindow() {
   mainWindow = new BrowserWindow({
-    title: '一个简单的配音工具',
+    title: '绘声',
     width: 1400,
     height: 900,
     maxWidth: 1920,

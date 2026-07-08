@@ -20,7 +20,7 @@ function LogoCanvas() {
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
-    const w = 160
+    const w = 180
     const h = 44
     const dpr = window.devicePixelRatio || 1
     canvas.width = w * dpr
@@ -117,18 +117,22 @@ function LogoCanvas() {
       const glow = Math.sin(time * 0.002) * 0.15 + 0.85
       const dark = isDark()
 
+      const font = "500 22px 'STKaiti', 'Kaiti SC', 'PingFang SC', serif"
+
       if (dark) {
         ctx!.fillStyle = 'rgba(167, 139, 250, 0.15)'
-        ctx!.font = "400 28px 'Ma Shan Zheng', cursive, sans-serif"
-        ctx!.fillText('方休', 43, 32)
+        ctx!.font = font
+        ctx!.fillText('绘声', 47, 32)
         ctx!.fillStyle = `rgba(196, 181, 253, ${glow})`
-        ctx!.fillText('方休', 42, 31)
+        ctx!.font = font
+        ctx!.fillText('绘声', 46, 31)
       } else {
         ctx!.fillStyle = 'rgba(91, 33, 182, 0.12)'
-        ctx!.font = "400 28px 'Ma Shan Zheng', cursive, sans-serif"
-        ctx!.fillText('方休', 43, 32)
+        ctx!.font = font
+        ctx!.fillText('绘声', 47, 32)
         ctx!.fillStyle = `rgba(91, 33, 182, ${glow})`
-        ctx!.fillText('方休', 42, 31)
+        ctx!.font = font
+        ctx!.fillText('绘声', 46, 31)
       }
     }
 

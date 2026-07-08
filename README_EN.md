@@ -2,13 +2,19 @@
 
 > **⚠️ Disclaimer**: This software is intended for learning, research, and personal lawful use only. Any use for fraud, impersonation, voice forgery, or any other illegal activity is strictly prohibited. Users assume full legal responsibility for their actions. (Yes, we have to say it. Move along.)
 
-# TTS Desktop
+# 绘声
 
 > Make words talk and give voices a soul ✨
 
 A desktop dubbing client built with Electron + React — **Smart Dubbing · Voice Cloning · Voice Design** all in one.
 
-The author is a clueless frontend dev who writes code like spaghetti, but hey, it works (mostly). (Does it though? 👀) If you find a bug, congratulations — you've discovered a hidden feature.
+The author is a clueless frontend dev who writes code like spaghetti, but hey, it works (mostly). (Does it though? 👀) If you find a bug, congratulations — you've discovered a hidden feature. Every time you open the app, a random meme tagline drops in with a typewriter effect. Click it for a new one 👇
+
+**"feature is a bonus bug-方休"**
+**"console.log cures everything-方休"**
+**"ship it now, patch it later-方休"**
+**"not a crash, it's a feature-方休"**
+**…29 flavors of developer humor**
 
 ## Features
 

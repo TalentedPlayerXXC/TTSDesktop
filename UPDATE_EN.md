@@ -15,6 +15,14 @@
 - Added `characters/` to `extraResources` — reference audio for all 296 characters now works in packaged builds
 - Rewrote path logic: `getCharactersBase()` / `getCustomSpeakersDir()` — dev uses `__dirname`, packaged build reads reference audio from resources (read-only) and stores custom speakers in `userData` (writable)
 
+### 🎨 UI Shenanigans
+
+- **Renamed to 绘声 (HuìShēng)** — "Paint with sound", the official name lands everywhere
+- **Logo redrawn** — STKaiti system font (zero copyright worries), canvas widened to 180px
+- **Listening ring avatar** — right side switched to concentric expanding rings, pairs with the left speaker
+- **Meme tagline pool** — 29 dev humor quotes, random on every launch or click, typewriter effect + blinking cursor
+- **Layout fix** — three-column flex centering, no more shifting right
+
 ---
 
 ## 2026-07-07
