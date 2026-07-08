@@ -50,7 +50,9 @@ export async function ensureModelLoaded(model: 'tts' | 'voxcpm2'): Promise<boole
   if (currentLoadedModel === model) return true
 
   try {
-    await unloadModel({ model })
+    if (currentLoadedModel) {
+      await unloadModel({ model: currentLoadedModel })
+    }
 
     const loadRes = await loadModel({ model })
     if (loadRes.data.success) {

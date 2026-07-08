@@ -62,6 +62,8 @@ async function unloadTTTModel() {
 }
 
 async function loadTTTModel() {
+  // 先卸载当前模型再加载，防止叠模型
+  await unloadTTTModel()
   const url = `http://${SERVER_HOST}:${SERVER_PORT}/model/load`
   return new Promise((resolve) => {
     const data = JSON.stringify({ model: 'tts' })

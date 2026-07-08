@@ -304,11 +304,7 @@ const TTSComponent = () => {
   }
 
   const toggleEmotion = (emotion: string) => {
-    setSelectedEmotions(prev =>
-      prev.includes(emotion)
-        ? prev.filter(e => e !== emotion)
-        : [...prev, emotion]
-    )
+    setSelectedEmotion(prev => prev === emotion ? '' : emotion)
   }
 
   const handleSynthesize = async () => {
@@ -540,8 +536,8 @@ const TTSComponent = () => {
                 {EMOTIONS.map(e => (
                   <span
                     key={e}
-                    className={`tts-emotion-tag${selectedEmotions.includes(e) ? ' active' : ''}`}
-                    onClick={() => toggleEmotion(e)}
+                    className={`tts-emotion-tag${selectedEmotion === e ? ' active' : ''}`}
+                    onClick={() => setSelectedEmotion(selectedEmotion === e ? '' : e)}
                   >
                     {e}
                   </span>
