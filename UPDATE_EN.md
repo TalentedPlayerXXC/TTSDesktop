@@ -22,6 +22,7 @@
 ### 🐛 Squashed Some Bugs
 
 - **Packaging signing fix** — Added ad-hoc codesign, downgraded from "damaged file → fix script" to "right-click app → Open", no more need for the fix.command
+- **Fixed One-Click Cloning** — Replaced Ant Design Upload with native file dialog (`dialog.showOpenDialog`), fixing the empty `originFileObj.path` issue that broke synthesis in Electron
 
 ---
 

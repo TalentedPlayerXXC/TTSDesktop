@@ -3,6 +3,7 @@ const { contextBridge, ipcRenderer } = require('electron')
 contextBridge.exposeInMainWorld('electronAPI', {
   selectAudio: () => ipcRenderer.invoke('select-audio'),
   getCharactersLocal: () => ipcRenderer.invoke('get-characters-local'),
+  getCharacterPreviewAudio: (params) => ipcRenderer.invoke('get-character-preview-audio', params),
   getCharacterEmotions: (params) => ipcRenderer.invoke('get-character-emotions', params),
   getCharacterPath: (params) => ipcRenderer.invoke('get-character-path', params),
   migrateCustomSpeaker: (params) => ipcRenderer.invoke('migrate-custom-speaker', params),

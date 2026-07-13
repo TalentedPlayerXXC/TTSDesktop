@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from 'react'
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import { Input, Button, Select, message } from 'antd'
 import {
   SearchOutlined,
@@ -334,11 +334,28 @@ const TTSComponent = () => {
     })
   }
 
+  // 快速试听
+  const [previewSpeaker, setPreviewSpeaker] = useState<string | null>(null)
+  const audioRef = useRef<HTMLAudioElement | null>(null)
+
   const handleSelectSpeaker = async (id: string) => {
     setSelectedSpeaker(id)
     const speaker = characters.find(c => c.id === id)
     if (!speaker?.game || !window.electronAPI) return
     if (speaker.game === '🎨 自定义') { setAvailableEmotions([]); return }
+
+    // 快速试听
+    if (audioRef.current) { audioRef.current.pause(); audioRef.current = null }
+    setPreviewSpeaker(null)
+    const audioRes = await window.electronAPI.getCharacterPreviewAudio({ game: speaker.game, name: speaker.name })
+    if (audioRes.status === 'ok' && audioRes.data) {
+      const audio = new Audio(`data:audio/wav;base64,${audioRes.data}`)
+      audio.volume = 0.3
+      audio.play().then(() => setPreviewSpeaker(id)).catch(() => {})
+      audio.addEventListener('ended', () => { setPreviewSpeaker(null); audioRef.current = null })
+      audioRef.current = audio
+    }
+
     const res = await window.electronAPI.getCharacterEmotions({ game: speaker.game, name: speaker.name })
     if (res.status === 'ok' && res.data) {
       setAvailableEmotions(res.data)
@@ -701,9 +718,10 @@ const TTSComponent = () => {
                         )}
                       </button>
                       <div
-                        className={`tts-speaker-avatar${speaker.gender === 'female' || speaker.gender === '女' ? ' female' : ''}`}
+                        className={`tts-speaker-avatar${speaker.gender === 'female' || speaker.gender === '女' ? ' female' : ''}${previewSpeaker === speaker.id ? ' playing' : ''}`}
                       >
                         {speaker.name.charAt(0)}
+                        {previewSpeaker === speaker.id && <span className='tts-speaker-playing' />}
                       </div>
                       <div className='tts-speaker-name'>{speaker.name}</div>
                       {speaker.game === '🎨 自定义' && (

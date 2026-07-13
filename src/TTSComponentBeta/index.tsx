@@ -1,9 +1,7 @@
 import { useState } from 'react'
-import { Button, Input, Upload, message } from 'antd'
+import { Button, Input, message } from 'antd'
 import {
-  UploadOutlined,
   PlayCircleOutlined,
-  CloseCircleFilled,
   SoundOutlined,
   FileTextOutlined,
   AudioOutlined,
@@ -24,21 +22,16 @@ function TTSComponentBeta() {
   const [audioPath, setAudioPath] = useState<string>('')
   const [text, setText] = useState('')
 
-  const handleFileChange = (info: any) => {
-    const file = info.file
-    if (!file) {
-      setAudioFile(null)
-      setAudioPath('')
+  const handleSelectFile = async () => {
+    if (!window.electronAPI) {
+      messageApi.warning('文件选择仅支持桌面端')
       return
     }
-    const isAudio = file.type?.includes('audio/')
-    if (!isAudio) {
-      messageApi.error('仅支持上传音频文件（如MP3/WAV等）')
-      return
+    const result = await window.electronAPI.selectAudio()
+    if (result) {
+      setAudioPath(result.filePath)
+      setAudioFile({ name: result.fileName } as File)
     }
-    setAudioFile(file)
-    const path = file.originFileObj?.path || ''
-    setAudioPath(path)
   }
 
   const handleSynthesize = async () => {
@@ -111,38 +104,19 @@ function TTSComponentBeta() {
         <div className='tts-beta-preview'>
           <div className='tts-beta-section'>
             <div className='tts-beta-section-title'><><AudioOutlined /> 参考音频</></div>
-            <Upload
-              name="audio"
-              maxCount={1}
-              accept="audio/*"
-              showUploadList={false}
-              beforeUpload={() => false}
-              onChange={handleFileChange}
-            >
-              <div className={`tts-beta-upload-area${audioFile ? ' uploaded' : ''}`}>
-                {audioFile && (
-                  <CloseCircleFilled
-                    className='tts-beta-upload-remove'
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      setAudioFile(null)
-                      setAudioPath('')
-                    }}
-                  />
-                )}
-                {audioFile ? (
-                  <div className='tts-beta-upload-file'>{audioFile.name}</div>
-                ) : (
-                  <>
-                    <div className='tts-beta-upload-icon'>
-                      <UploadOutlined />
-                    </div>
-                    <div className='tts-beta-upload-text'>点击或拖拽上传参考音频</div>
-                  </>
-                )}
-                <div className='tts-beta-upload-hint'>仅支持 MP3 / WAV 音频格式</div>
-              </div>
-            </Upload>
+            <div className={`tts-beta-upload-area${audioFile ? ' uploaded' : ''}`} onClick={handleSelectFile}>
+              {audioFile ? (
+                <div className='tts-beta-upload-file'>{audioFile.name}</div>
+              ) : (
+                <>
+                  <div className='tts-beta-upload-icon'>
+                    <AudioOutlined />
+                  </div>
+                  <div className='tts-beta-upload-text'>点击选择参考音频文件</div>
+                </>
+              )}
+              <div className='tts-beta-upload-hint'>支持 MP3 / WAV / FLAC 等常见格式</div>
+            </div>
           </div>
 
           <div className='tts-beta-actions'>

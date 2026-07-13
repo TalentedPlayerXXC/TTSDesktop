@@ -271,6 +271,22 @@ ipcMain.handle('get-characters-local', async () => {
   }
 })
 
+// 快速试听：读取角色第一个 .wav 文件返回 base64
+ipcMain.handle('get-character-preview-audio', async (_event, { game, name }) => {
+  const dir = getCharacterDir(game, name)
+  if (!dir) return { status: 'error', error: '未知的游戏' }
+  try {
+    const files = fs.readdirSync(dir).filter(f => f.endsWith('.wav')).sort()
+    if (files.length === 0) return { status: 'error', error: '无音频文件' }
+    const filePath = path.join(dir, files[0])
+    const buffer = fs.readFileSync(filePath)
+    const base64 = buffer.toString('base64')
+    return { status: 'ok', data: base64 }
+  } catch (err) {
+    return { status: 'error', error: err.message }
+  }
+})
+
 ipcMain.handle('get-character-emotions', async (_event, { game, name }) => {
   const dir = getCharacterDir(game, name)
   if (!dir) return { status: 'error', error: '未知的游戏' }

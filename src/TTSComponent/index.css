@@ -184,6 +184,7 @@
 }
 
 .tts-speaker-avatar {
+  position: relative;
   width: 48px;
   height: 48px;
   border-radius: 50%;
@@ -198,7 +199,28 @@
 }
 
 .tts-speaker-avatar.female {
-  background: var(--pink);
+  background: linear-gradient(135deg, #ec4899, #a855f7);
+}
+
+.tts-speaker-avatar.playing {
+  box-shadow: 0 0 0 3px var(--accent), 0 0 12px var(--accent);
+  animation: avatarPulse 1s ease-in-out infinite;
+}
+
+.tts-speaker-playing {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 12px;
+  height: 12px;
+  background: var(--accent);
+  border: 2px solid var(--bg-card);
+  border-radius: 50%;
+}
+
+@keyframes avatarPulse {
+  0%, 100% { box-shadow: 0 0 0 3px var(--accent), 0 0 8px var(--accent); }
+  50% { box-shadow: 0 0 0 5px var(--accent), 0 0 16px var(--accent); }
 }
 
 .tts-speaker-name {
