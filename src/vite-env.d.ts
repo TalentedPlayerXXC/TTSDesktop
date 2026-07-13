@@ -26,6 +26,7 @@ interface MongoResult {
 export interface ElectronAPI {
   selectAudio: () => Promise<any>
   getCharactersLocal: () => Promise<{ status: string; data?: any[]; error?: string }>
+  getServerPort: () => Promise<number | null>
   getCharacterPreviewAudio: (params: { game: string; name: string }) => Promise<{ status: string; data?: string; error?: string }>
   getCharacterEmotions: (params: { game: string; name: string }) => Promise<{ status: string; data?: string[]; error?: string }>
   getCharacterPath: (params: { game: string; name: string; emotion?: string }) => Promise<{ status: string; path?: string; error?: string }>

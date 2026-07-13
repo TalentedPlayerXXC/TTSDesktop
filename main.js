@@ -8,12 +8,30 @@ let mongoWorker = null
 
 const isDev = process.env.NODE_ENV === 'development'
 const SERVER_HOST = '127.0.0.1'
-const SERVER_PORT = 8000
 const STARTUP_TIMEOUT = 120000
 const HEALTH_CHECK_INTERVAL = 500
 
 let serverProcess = null
 let mainWindow = null
+let ACTUAL_PORT = null
+
+// 查找空闲端口
+const net = require('net')
+function findFreePort(start = 8000) {
+  return new Promise((resolve) => {
+    const tryPort = (port) => {
+      const server = net.createServer()
+      server.on('error', () => {
+        if (port - start < 50) tryPort(port + 1)
+        else resolve(null)
+      })
+      server.listen(port, '127.0.0.1', () => {
+        server.close(() => resolve(port))
+      })
+    }
+    tryPort(start)
+  })
+}
 
 const serverDir = app.isPackaged
   ? path.join(process.resourcesPath, 'tts_serve_mlx')
@@ -33,7 +51,7 @@ function httpGet(url) {
 }
 
 async function waitForServer() {
-  const url = `http://${SERVER_HOST}:${SERVER_PORT}/health`
+  const url = `http://${SERVER_HOST}:${ACTUAL_PORT}/health`
   const start = Date.now()
 
   while (Date.now() - start < STARTUP_TIMEOUT) {
@@ -46,7 +64,7 @@ async function waitForServer() {
 }
 
 async function unloadTTTModel() {
-  const url = `http://${SERVER_HOST}:${SERVER_PORT}/model/unload`
+  const url = `http://${SERVER_HOST}:${ACTUAL_PORT}/model/unload`
   return new Promise((resolve) => {
     const data = JSON.stringify({ model: 'tts' })
     const req = http.request(url, {
@@ -64,7 +82,7 @@ async function unloadTTTModel() {
 async function loadTTTModel() {
   // 先卸载当前模型再加载，防止叠模型
   await unloadTTTModel()
-  const url = `http://${SERVER_HOST}:${SERVER_PORT}/model/load`
+  const url = `http://${SERVER_HOST}:${ACTUAL_PORT}/model/load`
   return new Promise((resolve) => {
     const data = JSON.stringify({ model: 'tts' })
     const req = http.request(url, {
@@ -79,14 +97,23 @@ async function loadTTTModel() {
   })
 }
 
-function startServer() {
+async function startServer() {
+  // 查找空闲端口
+  const port = await findFreePort()
+  if (!port) {
+    console.error('[TTS] 无可用端口 (8000-8050 均被占用)')
+    return
+  }
+  ACTUAL_PORT = port
+  console.log('[TTS] 使用端口:', port)
+
   console.log('[TTS] 启动服务:', serverExe)
 
   serverProcess = spawn(serverExe, [], {
     cwd: serverDir,
     env: {
       ...process.env,
-      TTS_SERVE_PORT: String(SERVER_PORT),
+      TTS_SERVE_PORT: String(port),
       TTS_SERVE_HOST: SERVER_HOST,
       TTS_SERVE_LOG_LEVEL: 'warning',
       TTS_SERVE_MODELS_DIR: modelsDir,
@@ -255,6 +282,9 @@ function getCharacterDir(game, name) {
   return path.join(getCharactersBase(), folder, name)
 }
 
+// 暴露后端端口给渲染进程
+ipcMain.handle('get-server-port', () => ACTUAL_PORT)
+
 ipcMain.handle('get-characters-local', async () => {
   try {
     const jsonPath = app.isPackaged
@@ -421,7 +451,7 @@ ipcMain.handle('recover-custom-speakers', async () => {
 
 app.whenReady().then(async () => {
   try {
-    startServer()
+    await startServer()
     startMongoWorker()
     console.log('[TTS] 等待服务就绪...')
     await waitForServer()

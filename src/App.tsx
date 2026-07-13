@@ -8,6 +8,7 @@ import CyberpunkLoading from './components/CyberpunkLoading';
 import ErrorBoundary from './components/ErrorBoundary';
 import { SettingsProvider, useSettings } from './services/SettingsContext';
 import { ensureModelLoaded } from './services/index';
+import { updateServerPort } from './services/request';
 import './App.css';
 import Routers from './routes';
 
@@ -47,6 +48,10 @@ function AppContent() {
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light')
   }, [isDark])
+
+  useEffect(() => {
+    updateServerPort()
+  }, [])
 
   const selectedKey = items.some((item) => item.key === pathname)
     ? pathname

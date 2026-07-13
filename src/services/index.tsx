@@ -1,4 +1,4 @@
-import { qwens } from './request'
+import { qwens, getServerPortValue } from './request'
 import type {
   HealthResponse,
   ModelStatusResponse,
@@ -25,11 +25,11 @@ import type {
 } from './types'
 
 const isElectron = navigator.userAgent.toLowerCase().includes('electron')
-const OUTPUT_BASE = isElectron ? 'http://localhost:8000' : '/qwen'
 
 // 获取音频输出地址
 export function getOutputUrl(audioUrl: string): string {
-  return `${OUTPUT_BASE}${audioUrl}`
+  const port = getServerPortValue()
+  return `http://localhost:${port}${audioUrl}`
 }
 
 // 健康检查

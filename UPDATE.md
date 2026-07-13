@@ -23,6 +23,7 @@
 
 - **打包签名优化** — 加入 ad-hoc codesign，从「提示文件损坏→跑修复命令」降级为「右键 app → 打开」，省去修复.command 步骤
 - **修复一句话克隆** — 改用原生文件选择器（dialog.showOpenDialog）替代 Ant Design Upload，修复 Electron 下 `originFileObj.path` 为空导致合成失败的问题
+- **后端端口随机化** — 启动时从 8000 开始自旋扫描空闲端口，避免端口冲突导致后端崩溃
 
 ---
 
