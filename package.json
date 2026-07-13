@@ -8,9 +8,10 @@
     "build": "vite build",
     "start": "electron .",
     "preview": "vite build && electron .",
-    "pack:mac": "vite build && electron-builder --mac",
+    "pack:mac": "vite build && electron-builder --mac --dir && codesign --force --deep --sign - release/mac-arm64/绘声.app && electron-builder --mac --prepackaged release/mac-arm64/绘声.app && cp 使用说明.md user-guide.md 修复.command release/",
     "pack:win": "vite build && electron-builder --win --x64",
-    "pack:linux": "vite build && electron-builder --linux"
+    "pack:linux": "vite build && electron-builder --linux",
+    "export:characters": "node scripts/export-characters.js"
   },
   "dependencies": {
     "@ant-design/icons": "6.x",
@@ -43,6 +44,10 @@
       "package.json"
     ],
     "extraResources": [
+      {
+        "from": "src/data/characters.json",
+        "to": "characters.json"
+      },
       {
         "from": "tts_serve_mlx",
         "to": "tts_serve_mlx"

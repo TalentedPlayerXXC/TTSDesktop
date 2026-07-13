@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import { Input, Button, Select, message } from 'antd'
 import {
   SearchOutlined,
@@ -15,7 +15,7 @@ import {
   UserSwitchOutlined,
 } from '@ant-design/icons'
 import IconTTS from '../components/IconTTS'
-import { loadCustomSpeakers, saveCustomSpeaker, deleteCustomSpeaker } from '../services/customSpeaker'
+import { loadCustomSpeakers, saveCustomSpeaker, deleteCustomSpeaker, loadFavorites, saveFavorites } from '../services/customSpeaker'
 import { getSessionCache, setSessionCache } from '../services/sessionCache'
 import { clone, batchClone, voxClone, ensureModelLoaded, getCurrentModel, getOutputUrl } from '../services/index'
 import type { BatchCloneItem } from '../services/types'
@@ -88,7 +88,7 @@ const TTSComponent = () => {
   const [searchText, setSearchText] = useState('')
   const [activeType, setActiveType] = useState('all')
   const [selectedSpeaker, setSelectedSpeaker] = useState<string | null>(null)
-  const [favorites, setFavorites] = useState<Set<string>>(new Set())
+  const [favorites, setFavorites] = useState<Set<string>>(loadFavorites())
 
   // 多人
   const [lines, setLines] = useState<MultiLine[]>([
@@ -157,44 +157,101 @@ const TTSComponent = () => {
     }
 
     setCharactersLoading(true)
-    Promise.all([
-      window.electronAPI.mongo.getCharacters(),
-      window.electronAPI.mongo.getTags(),
-    ]).then(([charRes, tagRes]) => {
-      // 缓存 MongoDB 数据（不含自定义，因为自定义可能随时增减）
-      if (charRes.status === 'ok' && tagRes.status === 'ok') {
-        setSessionCache(charRes.data || [], tagRes.data || [])
-      }
-      if (charRes.status === 'ok' && charRes.data?.length) {
-        const mapped = charRes.data.map((c: CharacterRaw) => ({
-          id: c._id,
-          name: c.name,
-          gender: c.gender,
-          tags: [c.voiceType, c.temperament].filter(Boolean),
-          voiceType: c.voiceType || '',
-          temperament: c.temperament || '',
-          game: c.game || '',
-        }))
-        const custom = loadCustomSpeakers()
-        const merged = custom.length > 0
-          ? [...mapped, ...custom.map(s => ({
-              id: s.id,
-              name: s.name,
+
+    // 尝试本地加载，失败则回退 MongoDB
+    const tryLocal = () => {
+      window.electronAPI?.getCharactersLocal?.().then((localRes: any) => {
+        setTimeout(() => {
+          if (localRes?.status === 'ok' && localRes.data?.length) {
+            const mapped = localRes.data.map((c: any) => ({
+              id: c.id, name: c.name, gender: c.gender,
+              tags: [c.voiceType, c.temperament].filter(Boolean),
+              voiceType: c.voiceType || '', temperament: c.temperament || '', game: c.game || '',
+            }))
+            if (localRes.tags?.length) setTags(localRes.tags)
+            const custom = loadCustomSpeakers()
+            setCharacters(custom.length > 0 ? [...mapped, ...custom.map(s => ({
+              id: s.id, name: s.name,
               gender: ['萝莉', '少女', '御姐'].includes(s.voiceType) ? '女' : '男',
               tags: [s.voiceType, s.temperament].filter(Boolean),
-              voiceType: s.voiceType || '',
-              temperament: s.temperament || '',
-              game: '🎨 自定义',
-            }))]
-          : mapped
-        setCharacters(merged)
-      }
-      if (tagRes.status === 'ok' && tagRes.data?.length) {
-        setTags(tagRes.data)
-      }
-    }).catch(() => {}).finally(() => setCharactersLoading(false))
+              voiceType: s.voiceType || '', temperament: s.temperament || '', game: '🎨 自定义',
+            }))] : mapped)
+            setCharactersLoading(false)
+            // 本地成功，后台尝 MongoDB
+            window.electronAPI.mongo.getCharacters().then((charRes: any) => {
+              if (charRes.status === 'ok' && charRes.data?.length) {
+                const mapped = charRes.data.map((c: CharacterRaw) => ({
+                  id: c._id, name: c.name, gender: c.gender,
+                  tags: [c.voiceType, c.temperament].filter(Boolean),
+                  voiceType: c.voiceType || '', temperament: c.temperament || '', game: c.game || '',
+                }))
+                const custom = loadCustomSpeakers()
+                setCharacters(custom.length > 0 ? [...mapped, ...custom.map(s => ({
+                  id: s.id, name: s.name,
+                  gender: ['萝莉', '少女', '御姐'].includes(s.voiceType) ? '女' : '男',
+                  tags: [s.voiceType, s.temperament].filter(Boolean),
+                  voiceType: s.voiceType || '', temperament: s.temperament || '', game: '🎨 自定义',
+                }))] : mapped)
+              }
+              window.electronAPI.mongo.getTags().then((tagRes: any) => {
+                if (tagRes.status === 'ok' && tagRes.data?.length) setTags(tagRes.data)
+              }).catch(() => {})
+            }).catch(() => {})
+          } else {
+            fallbackToMongo()
+          }
+        }, 500);
+      }).catch(() => fallbackToMongo())
+    }
+
+    const fallbackToMongo = () => {
+      Promise.all([
+        window.electronAPI.mongo.getCharacters(),
+        window.electronAPI.mongo.getTags(),
+      ]).then(([charRes, tagRes]) => {
+        if (charRes.status === 'ok' && tagRes.status === 'ok') {
+          setSessionCache(charRes.data || [], tagRes.data || [])
+        }
+        if (charRes.status === 'ok' && charRes.data?.length) {
+          const mapped = charRes.data.map((c: CharacterRaw) => ({
+            id: c._id, name: c.name, gender: c.gender,
+            tags: [c.voiceType, c.temperament].filter(Boolean),
+            voiceType: c.voiceType || '', temperament: c.temperament || '', game: c.game || '',
+          }))
+          const custom = loadCustomSpeakers()
+          setCharacters(custom.length > 0 ? [...mapped, ...custom.map(s => ({
+            id: s.id, name: s.name,
+            gender: ['萝莉', '少女', '御姐'].includes(s.voiceType) ? '女' : '男',
+            tags: [s.voiceType, s.temperament].filter(Boolean),
+            voiceType: s.voiceType || '', temperament: s.temperament || '', game: '🎨 自定义',
+          }))] : mapped)
+        }
+        if (tagRes.status === 'ok' && tagRes.data?.length) {
+          setTags(tagRes.data)
+        }
+      }).catch(() => {}).finally(() => setCharactersLoading(false))
+    }
+
+    tryLocal()
 
     runRecovery()
+  }, [])
+
+  // 删除自定义配音员
+  const handleDeleteCustom = async (speaker: any) => {
+    deleteCustomSpeaker(speaker.id)
+    await window.electronAPI?.deleteCustomSpeaker?.({ name: speaker.name })
+    setCharacters(prev => prev.filter(c => c.id !== speaker.id))
+  }
+
+  // 清洗无效收藏 ID
+  const cleanFavorites = useCallback((arr: any[]) => {
+    const allIds = new Set(arr.map(c => c.id))
+    setFavorites(prev => {
+      const cleaned = new Set([...prev].filter(id => allIds.has(id)))
+      if (cleaned.size !== prev.size) saveFavorites(cleaned)
+      return cleaned
+    })
   }, [])
 
   function runRecovery() {
@@ -272,6 +329,7 @@ const TTSComponent = () => {
       const next = new Set(prev)
       if (next.has(id)) next.delete(id)
       else next.add(id)
+      saveFavorites(next)
       return next
     })
   }
@@ -648,6 +706,18 @@ const TTSComponent = () => {
                         {speaker.name.charAt(0)}
                       </div>
                       <div className='tts-speaker-name'>{speaker.name}</div>
+                      {speaker.game === '🎨 自定义' && (
+                        <button
+                          className='tts-speaker-delete'
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleDeleteCustom(speaker)
+                          }}
+                          title='删除此自定义配音员'
+                        >
+                          ×
+                        </button>
+                      )}
                       <div className='tts-speaker-tags'>
                         {speaker.tags.map(tag => (
                           <span key={tag} className='tts-speaker-tag'>

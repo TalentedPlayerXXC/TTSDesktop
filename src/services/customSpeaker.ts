@@ -2,6 +2,7 @@
 // 声音设计合成后的音源可加入此列表，当作普通配音员使用
 
 const STORAGE_KEY = 'tts-custom-speakers'
+const FAVORITES_KEY = 'tts-favorites'
 
 export interface CustomSpeaker {
   id: string
@@ -43,4 +44,19 @@ export function saveCustomSpeaker(speaker: Omit<CustomSpeaker, 'id' | 'createdAt
 export function deleteCustomSpeaker(id: string): void {
   const list = loadCustomSpeakers().filter(s => s.id !== id)
   localStorage.setItem(STORAGE_KEY, JSON.stringify(list))
+}
+
+// 收藏功能
+export function loadFavorites(): Set<string> {
+  try {
+    const raw = localStorage.getItem(FAVORITES_KEY)
+    if (!raw) return new Set()
+    return new Set(JSON.parse(raw))
+  } catch {
+    return new Set()
+  }
+}
+
+export function saveFavorites(ids: Set<string>): void {
+  localStorage.setItem(FAVORITES_KEY, JSON.stringify([...ids]))
 }

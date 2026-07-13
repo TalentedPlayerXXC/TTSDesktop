@@ -2,6 +2,29 @@
 
 # Changelog
 
+## 2026-07-13
+
+### 🔮 Pie in the Sky 🥮
+
+- **Multi-Character Mode Polish** — The current speaker picker feels clunky, planning some love to make it smoother ✨
+
+### ✨ New Features
+
+- **Character data localization** — 349 characters + 22 tags exported from MongoDB to local JSON, instant startup, no more blank screens for China Mobile users
+- **Persistent favorites** — Saved to localStorage with auto-cleanup of stale IDs
+- **Custom speaker management** — Hover × delete button on speaker cards, bulk delete in Settings
+
+### 🎨 UI Shenanigans
+
+- **0.5s skeleton delay** — Local data loads in milliseconds, but we fake it with a half-second wait for that "working" feel 🤡
+- **Delete button repositioned** — Moved to top-left corner, no more overlap with the favorite heart
+
+### 🐛 Squashed Some Bugs
+
+- **Packaging signing fix** — Added ad-hoc codesign, downgraded from "damaged file → fix script" to "right-click app → Open", no more need for the fix.command
+
+---
+
 ## 2026-07-08
 
 ### 🔮 Pie in the Sky 🥮

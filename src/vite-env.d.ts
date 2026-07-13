@@ -23,16 +23,18 @@ interface MongoResult {
   data?: any[]
 }
 
-interface ElectronAPI {
-  selectAudio: () => Promise<{ filePath: string; fileName: string } | null>
-  getCharacterEmotions: (params: { game: string; name: string }) => Promise<{ status: string; error?: string; data?: string[] }>
-  getCharacterPath: (params: { game: string; name: string; emotion: string }) => Promise<{ status: string; error?: string; path?: string }>
-  migrateCustomSpeaker: (params: { name: string; sourceFilename: string; voiceType?: string; temperament?: string }) => Promise<{ status: string; error?: string; path?: string }>
-  recoverCustomSpeakers: () => Promise<{ status: string; error?: string; data?: any[] }>
+export interface ElectronAPI {
+  selectAudio: () => Promise<any>
+  getCharactersLocal: () => Promise<{ status: string; data?: any[]; error?: string }>
+  getCharacterEmotions: (params: { game: string; name: string }) => Promise<{ status: string; data?: string[]; error?: string }>
+  getCharacterPath: (params: { game: string; name: string; emotion?: string }) => Promise<{ status: string; path?: string; error?: string }>
+  migrateCustomSpeaker: (params: { sourceFilename: string; name: string; gender: string; voiceType: string; temperament: string }) => Promise<any>
+  deleteCustomSpeaker: (params: { name: string }) => Promise<any>
+  recoverCustomSpeakers: () => Promise<{ status: string; data?: any[] }>
   mongo: {
-    connect: () => Promise<MongoResult>
-    getCharacters: () => Promise<MongoResult & { data?: CharacterDoc[] }>
-    getTags: () => Promise<MongoResult & { data?: TagDoc[] }>
+    connect: () => Promise<any>
+    getCharacters: () => Promise<any>
+    getTags: () => Promise<any>
   }
 }
 

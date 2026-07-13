@@ -255,6 +255,22 @@ function getCharacterDir(game, name) {
   return path.join(getCharactersBase(), folder, name)
 }
 
+ipcMain.handle('get-characters-local', async () => {
+  try {
+    const jsonPath = app.isPackaged
+      ? path.join(process.resourcesPath, 'characters.json')
+      : path.join(__dirname, 'src', 'data', 'characters.json')
+    const raw = JSON.parse(fs.readFileSync(jsonPath, 'utf-8'))
+    // 兼容新旧格式：新格式有 { characters, tags }，旧格式是裸数组
+    const data = Array.isArray(raw) ? raw : raw.characters
+    const tags = Array.isArray(raw) ? [] : (raw.tags || [])
+    return { status: 'ok', data, tags }
+  } catch (err) {
+    console.error('[TTS] 读取本地角色数据失败:', err.message)
+    return { status: 'error', error: err.message }
+  }
+})
+
 ipcMain.handle('get-character-emotions', async (_event, { game, name }) => {
   const dir = getCharacterDir(game, name)
   if (!dir) return { status: 'error', error: '未知的游戏' }
@@ -337,6 +353,19 @@ ipcMain.handle('migrate-custom-speaker', async (_event, { name, sourceFilename, 
       createdAt: new Date().toISOString(),
     }))
     return { status: 'ok', path: destFile }
+  } catch (err) {
+    return { status: 'error', error: err.message }
+  }
+})
+
+// 自定义配音员：删除单个自定义角色（localStorage + 文件系统）
+ipcMain.handle('delete-custom-speaker', async (_event, { name }) => {
+  const speakerDir = path.join(getCustomSpeakersDir(), name)
+  try {
+    if (fs.existsSync(speakerDir)) {
+      fs.rmSync(speakerDir, { recursive: true, force: true })
+    }
+    return { status: 'ok' }
   } catch (err) {
     return { status: 'error', error: err.message }
   }

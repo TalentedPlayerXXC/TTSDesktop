@@ -1,15 +1,18 @@
 import { useEffect, useState } from 'react'
-import { Card, Select, Button, message, Modal } from 'antd'
+import { Card, Select, Button, message, Modal, List, Tag } from 'antd'
 import {
   SkinOutlined,
   DeleteOutlined,
   ClearOutlined,
   ClockCircleOutlined,
   CompressOutlined,
+  SoundOutlined,
+  UserOutlined,
 } from '@ant-design/icons'
 import IconSettings from '../components/IconSettings'
 import { useSettings } from '../services/SettingsContext'
 import { getCacheStatus, cleanupCache } from '../services/index'
+import { loadCustomSpeakers, deleteCustomSpeaker } from '../services/customSpeaker'
 import type { CacheStatusResponse } from '../services/types'
 import './index.css'
 
@@ -26,6 +29,12 @@ const SettingsCompontent = () => {
     title: string
     desc: string
   }>({ open: false, mode: 'all', title: '', desc: '' })
+
+  const [customSpeakers, setCustomSpeakers] = useState<any[]>([])
+
+  useEffect(() => {
+    setCustomSpeakers(loadCustomSpeakers())
+  }, [])
 
   const loadCache = async () => {
     setCacheLoading(true)
@@ -157,6 +166,84 @@ const SettingsCompontent = () => {
           ) : (
             <div style={{ color: cacheLoading ? '#888' : '#bbb', padding: '8px 0' }}>
               {cacheLoading ? '正在加载缓存状态...' : '无法获取缓存信息（服务未启动？）'}
+            </div>
+          )}
+        </Card>
+
+        <Card className='settings-card' title={<><UserOutlined /> 自定义配音员</>}>
+          {customSpeakers.length === 0 ? (
+            <div style={{ color: 'var(--text-muted)', padding: '8px 0' }}>
+              暂无自定义配音员
+            </div>
+          ) : (
+            <div>
+              <List
+                size='small'
+                dataSource={customSpeakers}
+                renderItem={(s: any) => (
+                  <List.Item>
+                    <List.Item.Meta
+                      avatar={
+                        <div style={{
+                          width: 32, height: 32, borderRadius: '50%',
+                          background: 'var(--accent)', color: '#fff',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          fontSize: 14, fontWeight: 600,
+                        }}>
+                          {s.name.charAt(0)}
+                        </div>
+                      }
+                      title={s.name}
+                      description={
+                        <span>
+                          {s.voiceType && <Tag style={{ marginRight: 4 }}>{s.voiceType}</Tag>}
+                          {s.temperament && <Tag>{s.temperament}</Tag>}
+                          <span style={{ color: 'var(--text-muted)', fontSize: 12, marginLeft: 8 }}>
+                            {new Date(s.createdAt).toLocaleDateString()}
+                          </span>
+                        </span>
+                      }
+                    />
+                  </List.Item>
+                )}
+              />
+              <Button
+                danger
+                icon={<DeleteOutlined />}
+                style={{ marginTop: 12, marginRight: 8 }}
+                onClick={() => {
+                  Modal.confirm({
+                    title: '全部删除',
+                    content: `确定删除全部 ${customSpeakers.length} 个自定义配音员？`,
+                    okText: '确定',
+                    cancelText: '取消',
+                    okButtonProps: { danger: true },
+                    onOk: async () => {
+                      for (const s of customSpeakers) {
+                        deleteCustomSpeaker(s.id)
+                        await window.electronAPI?.deleteCustomSpeaker?.({ name: s.name })
+                      }
+                      setCustomSpeakers([])
+                      messageApi.success('已删除全部自定义配音员')
+                    },
+                  })
+                }}
+              >
+                全部删除
+              </Button>
+              <Button
+                icon={<SoundOutlined />}
+                style={{ marginTop: 12 }}
+                onClick={async () => {
+                  const res = await window.electronAPI?.recoverCustomSpeakers?.()
+                  if (res?.status === 'ok') {
+                    setCustomSpeakers(loadCustomSpeakers())
+                    messageApi.success(`同步完成，当前 ${loadCustomSpeakers().length} 个自定义配音员`)
+                  }
+                }}
+              >
+                同步文件系统
+              </Button>
             </div>
           )}
         </Card>
