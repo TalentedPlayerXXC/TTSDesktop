@@ -10,20 +10,28 @@
 
 ### ✨ New Features
 
-- **Character data localization** — 349 characters + 22 tags exported from MongoDB to local JSON, instant startup, no more blank screens for China Mobile users
-- **Persistent favorites** — Saved to localStorage with auto-cleanup of stale IDs
-- **Custom speaker management** — Hover × delete button on speaker cards, bulk delete in Settings
+- **🎛️ Sound Workshop** — Brand new audio post-processing page! Upload any audio, apply real-time DSP effects, export with one click
+- **13 audio effects** — Volume, Echo, Vibrato, Pitch Shift, Distortion, Reverb, Chorus, PingPong Delay, AutoFilter, Phaser, Tremolo, Stereo Widener, 3-Band EQ
+- **12 sound presets** — Cute Girl, Deep Man, Kawaii, Electronic, Ethereal, Valley Echo, Telephone, Ghost, Surround, KTV Reverb, Bass Boost, Heartfelt Words
+- **Preset exclusivity + toggle** — One preset at a time, click to toggle on/off
 
 ### 🎨 UI Shenanigans
 
-- **0.5s skeleton delay** — Local data loads in milliseconds, but we fake it with a half-second wait for that "working" feel 🤡
-- **Delete button repositioned** — Moved to top-left corner, no more overlap with the favorite heart
+- **Sound Workshop layout** — Two-column design (47% left: upload+waveform+output volume, right: effects/presets tab)
+- **SWPlayer component** — Dedicated audio waveform display with play/download/clear buttons
+- **AudioPlayer cleaned up** — Removed all hacks (muted/onClear/onTogglePlay), zero impact on TTSComponent
+- **Output volume control** — -20~+20dB real-time Tone.js master volume
+- **Waveform sync** — Tone.now() drives WaveSurfer progress, 50ms precision
+- **Tone.Offline export** — Export fully processed WAV with complete effects chain
 
 ### 🐛 Squashed Some Bugs
 
 - **Packaging signing fix** — Added ad-hoc codesign, downgraded from "damaged file → fix script" to "right-click app → Open", no more need for the fix.command
 - **Fixed One-Click Cloning** — Replaced Ant Design Upload with native file dialog (`dialog.showOpenDialog`), fixing the empty `originFileObj.path` issue that broke synthesis in Electron
 - **Backend port randomization** — Scan for free ports starting from 8000 on startup, preventing crashes when the default port is already in use
+- **Fixed effect chain dropouts** — disposeChain no longer disconnects player, chain rebuild keeps player state intact
+- **Fixed LFO effects not working** — AutoFilter/Vibrato/Phaser/Chorus now all call .start()
+- **Fixed export missing output volume** — Tone.Offline callback reapplies outputVolume
 
 ---
 

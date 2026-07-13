@@ -1,0 +1,139 @@
+/* 绘声自研音频播放器 */
+.hs-audio {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-default);
+  border-radius: 10px;
+  width: 85%;
+  max-width: 600px;
+  margin-left: 12px;
+  margin-right: auto;
+  box-sizing: border-box;
+  transition: border-color 0.2s;
+}
+
+.hs-audio:hover {
+  border-color: var(--accent);
+}
+
+/* 按钮 */
+.hs-audio-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  color: rgba(124, 58, 237, 0.75);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+  flex-shrink: 0;
+}
+
+[data-theme="dark"] .hs-audio-btn {
+  color: rgba(196, 181, 253, 0.9);
+}
+
+.hs-audio-btn:hover {
+  background: rgba(124, 58, 237, 0.12);
+  color: rgba(124, 58, 237, 0.9);
+}
+
+[data-theme="dark"] .hs-audio-btn:hover {
+  background: rgba(196, 181, 253, 0.15);
+  color: rgba(196, 181, 253, 1);
+}
+
+/* 波形区域 */
+.hs-audio-waveform {
+  flex: 1;
+  min-width: 0;
+  height: 40px;
+  cursor: pointer;
+}
+
+.hs-audio-waveform wave {
+  cursor: pointer !important;
+}
+
+.hs-audio-waveform wave::-webkit-scrollbar {
+  display: none;
+}
+
+/* 时间 */
+.hs-audio-time {
+  font-size: 12px;
+  color: rgba(124, 58, 237, 0.6);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+[data-theme="dark"] .hs-audio-time {
+  color: rgba(196, 181, 253, 0.7);
+}
+
+/* 右侧操作区 */
+.hs-audio-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+/* 下载链接 */
+a.hs-audio-btn {
+  text-decoration: none;
+}
+
+/* 音量 — CSS hover，无 JS 延迟 */
+.hs-audio-volume-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.hs-audio-volume-popup {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-card);
+  border: 1px solid var(--border-default);
+  border-radius: 8px;
+  padding: 8px;
+  box-shadow: var(--shadow-md);
+  z-index: 100;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.hs-audio-volume-wrap:hover .hs-audio-volume-popup,
+.hs-audio-volume-popup:hover {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transition: opacity 0.1s ease, visibility 0s;
+  transition-delay: 0s;
+}
+
+.hs-audio-volume-popup {
+  transition: opacity 0.1s ease, visibility 0s 0.2s;
+}
+
+/* 竖滑杆 */
+.hs-audio-volume-slider {
+  writing-mode: vertical-lr;
+  direction: rtl;
+  width: 6px;
+  height: 80px;
+  accent-color: #7c3aed;
+  cursor: pointer;
+}
+

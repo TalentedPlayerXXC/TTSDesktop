@@ -7,6 +7,8 @@ import {
   AudioOutlined,
 } from '@ant-design/icons'
 import IconClone from '../components/IconClone'
+import AudioPlayer from '../components/AudioPlayer'
+import '../components/AudioPlayer.css'
 import CyberpunkLoading from '../components/CyberpunkLoading'
 import { clone, ensureModelLoaded, getOutputUrl } from '../services/index'
 import './index.css'
@@ -134,7 +136,7 @@ function TTSComponentBeta() {
 
           <div className='tts-beta-preview-center'>
             {audioUrl ? (
-              <audio src={audioUrl} controls className='tts-beta-audio' />
+              <AudioPlayer src={audioUrl} />
             ) : (
               <div className='tts-beta-preview-placeholder'>
                 <SoundOutlined className='tts-beta-preview-icon' />

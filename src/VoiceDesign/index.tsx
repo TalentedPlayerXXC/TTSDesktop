@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { Input, Button, message, Modal, Slider } from 'antd'
+import AudioPlayer from '../components/AudioPlayer'
+import '../components/AudioPlayer.css'
 import {
   PlayCircleOutlined,
   SoundOutlined,
@@ -217,7 +219,7 @@ const VoiceDesign = () => {
               </div>
             ) : (
               <>
-                <audio src={audioUrl} controls className='voice-design-audio' />
+              <AudioPlayer src={audioUrl} />
                 <Button
                   type='default'
                   icon={<UserAddOutlined />}

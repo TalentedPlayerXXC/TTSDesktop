@@ -10,6 +10,7 @@ const menuItems: MenuItem[] = [
   { key: '/tts', label: '智能配音' },
   { key: '/tts-beta', label: '一句话克隆' },
   { key: '/voice-design', label: '声音设计' },
+  { key: '/sound-workshop', label: '声音工坊' },
   { key: '/settings', label: '偏好设置' },
 ]
 
@@ -265,6 +266,45 @@ function drawSettingsIcon(
   ctx.restore()
 }
 
+// 声音工坊 — 波形均衡器
+function drawWorkshopIcon(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  size: number,
+  time: number,
+  isActive: boolean,
+  isHovered: boolean
+) {
+  const hoverScale = isHovered ? 1.08 : 1
+  const scale = size * hoverScale
+
+  ctx.save()
+  ctx.translate(cx, cy)
+  ctx.scale(scale, scale)
+
+  // 6 条波形柱
+  const bars = 6
+  const barW = 3
+  const gap = 2.5
+  const totalW = bars * (barW + gap) - gap
+  const startX = -totalW / 2
+
+  for (let i = 0; i < bars; i++) {
+    // 动态高度：每条柱根据时间和序号上下摆动
+    const h = 6 + Math.abs(Math.sin(time * 0.005 + i * 0.8)) * 10
+    const x = startX + i * (barW + gap)
+    const y = -h / 2
+
+    ctx.beginPath()
+    ctx.roundRect(x, y, barW, h, 1)
+    ctx.fillStyle = isActive ? '#fbbf24' : '#a78bfa'
+    ctx.fill()
+  }
+
+  ctx.restore()
+}
+
 function SidebarCanvas({
   item,
   isActive,
@@ -413,6 +453,9 @@ function SidebarCanvas({
           break
         case '/settings':
           drawSettingsIcon(ctx, cx, cy, 0.7, time, isActive, isHovered)
+          break
+        case '/sound-workshop':
+          drawWorkshopIcon(ctx, cx, cy, 0.72, time, isActive, isHovered)
           break
       }
 

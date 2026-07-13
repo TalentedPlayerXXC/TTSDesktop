@@ -15,6 +15,8 @@ import {
   UserSwitchOutlined,
 } from '@ant-design/icons'
 import IconTTS from '../components/IconTTS'
+import AudioPlayer from '../components/AudioPlayer'
+import '../components/AudioPlayer.css'
 import { loadCustomSpeakers, saveCustomSpeaker, deleteCustomSpeaker, loadFavorites, saveFavorites } from '../services/customSpeaker'
 import { getSessionCache, setSessionCache } from '../services/sessionCache'
 import { clone, batchClone, voxClone, ensureModelLoaded, getCurrentModel, getOutputUrl } from '../services/index'
@@ -383,6 +385,10 @@ const TTSComponent = () => {
   }
 
   const handleSynthesize = async () => {
+    // 停掉正在播放的试听
+    if (audioRef.current) { audioRef.current.pause(); audioRef.current = null }
+    setPreviewSpeaker(null)
+
     if (mode === 'single') {
       if (!text.trim()) { messageApi.warning('请输入配音文本'); return }
       if (!selectedSpeaker) { messageApi.warning('请选择一个配音员'); return }
@@ -786,6 +792,7 @@ const TTSComponent = () => {
               size='large'
               icon={<PlayCircleOutlined />}
               onClick={handleSynthesize}
+              disabled={!selectedSpeaker}
               className='tts-btn-primary'
             >
               {synthesizing ? '合成中...' : (mode === 'multi' ? '合并合成' : '合成试听')}
@@ -793,7 +800,7 @@ const TTSComponent = () => {
           </div>
           <div className='tts-preview-center'>
             {audioUrl ? (
-              <audio src={audioUrl} controls style={{ width: '100%' }} autoPlay />
+              <AudioPlayer src={audioUrl} />
             ) : (
               <div className='tts-preview-placeholder'>
                 <SoundOutlined className='tts-preview-icon' />

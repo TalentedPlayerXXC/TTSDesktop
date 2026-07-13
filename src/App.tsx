@@ -26,6 +26,10 @@ const items = [
     label: '声音设计(beta)',
   },
   {
+    key: '/sound-workshop',
+    label: '声音工坊',
+  },
+  {
     key: '/settings',
     label: '设置',
   },
