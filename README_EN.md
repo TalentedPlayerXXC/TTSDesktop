@@ -6,7 +6,7 @@
 
 > Make words talk and give voices a soul ✨
 
-A desktop dubbing client built with Electron + React — **Smart Dubbing · Voice Cloning · Voice Design** all in one.
+A desktop dubbing client built with Electron + React — **Smart Dubbing · Voice Cloning · Voice Design · Sound Workshop · Chat Bubble** all in one.
 
 The author is a clueless frontend dev who writes code like spaghetti, but hey, it works (mostly). (Does it though? 👀) If you find a bug, congratulations — you've discovered a hidden feature. Every time you open the app, a random meme tagline drops in with a typewriter effect. Click it for a new one 👇
 
