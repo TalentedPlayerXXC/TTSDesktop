@@ -18,10 +18,12 @@ The author is a clueless frontend dev who writes code like spaghetti, but hey, i
 
 ## Features
 
-- **🎬 Smart Dubbing** — Solo, Multi-Character, and Emotion modes at your fingertips. Search and filter through 296+ voice actors, mark favorites, and add custom speakers. Emotion tags are automatically parsed from audio filenames
-- **🎭 One-Shot Cloning** — Throw in a reference audio and the AI will copy the voice faster than you can say "wait, that's illegal" (needs the `tts_serve_mlx` backend buddy)
+- **🎬 Smart Dubbing** — Solo, Multi-Character, and Emotion modes at your fingertips. Search and filter through 349+ voice actors, mark favorites, and add custom speakers. Emotion tags are automatically parsed from audio filenames
+- **🎭 One-Shot Cloning** — Throw in a reference audio and the AI will copy the voice faster than you can say "wait, that's illegal" (needs the tts_serve_mlx backend buddy)
 - **🎨 Voice Design** — No sliders, no knobs. Just type "a gentle, warm female voice" and the AI builds it on the fly. Advanced params (inference steps, CFG) included
 - **📦 Custom Speakers** — One-click add from Voice Design to your speaker list, use them like any other character
+- **🎛️ Sound Workshop** (added 2026-07-13) — Upload any audio, apply real-time DSP effects (13 effects: echo/pitch/distortion/reverb/chorus/phaser/auto-filter/tremolo/stereo widener/EQ/robot voice), export fully processed WAV via Tone.Offline rendering
+- **💬 Chat Bubble Multi-Character** (added 2026-07-14) — Say goodbye to clunky dropdown editors. Edit dialogues like chat messages, click characters to auto-select emotions, compose and synthesize in one flow
 - **⚙️ Preferences** — Themes, language, cache management. Make it yours
 - **🛡️ Error Boundary** — Page crashed? No big deal. One click and you're back in business. (Even the author uses this regularly.)
 

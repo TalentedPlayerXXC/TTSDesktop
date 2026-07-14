@@ -4,10 +4,6 @@
 
 ## 2026-07-14
 
-### 🔮 Pie in the Sky 🥮
-
-- **Multi-Character Mode Polish** — The current speaker picker feels clunky, planning some love to make it smoother ✨
-
 ### ✨ New Features
 
 - **💬 Chat Bubble Multi-Character Mode** — Say goodbye to the old "number + dropdown + input" editor! Brand new chat bubble interface:
