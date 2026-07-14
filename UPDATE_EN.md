@@ -2,7 +2,29 @@
 
 # Changelog
 
-## 2026-07-13
+## 2026-07-14
+
+### 🔮 Pie in the Sky 🥮
+
+- **Multi-Character Mode Polish** — The current speaker picker feels clunky, planning some love to make it smoother ✨
+
+### ✨ New Features
+
+- **💬 Chat Bubble Multi-Character Mode** — Say goodbye to the old "number + dropdown + input" editor! Brand new chat bubble interface:
+  - Left column: bubble dialogue list, click to edit text inline, × to delete lines
+  - Right column: full character list (search/filter/favorites/emotion tags), click to auto-fill bottom input
+  - Bottom input: [Character Name:2] [Emotion:2] [Text:5] [Clear:1]
+  - Auto-selects the first emotion when picking a character, same emotion source as single mode
+
+### 🎨 UI Shenanigans
+
+- **Layout restructured** — Chat bubbles on the left, character grid on the right in multi mode, no more cramped 60% area
+- **Character name as plain text** — No more box styling for the selected character display
+- **Emotion Select height aligned** — Unified 32px height with name and text inputs
+
+### 🐛 Squashed Some Bugs
+
+- **Fixed missing `</div>` in emotion tags** — Caused JSX parsing error and build failure
 
 ### 🔮 Pie in the Sky 🥮
 

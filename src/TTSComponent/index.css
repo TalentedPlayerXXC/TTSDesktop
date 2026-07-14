@@ -46,6 +46,7 @@
 
 .tts-preview {
   flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -399,104 +400,62 @@
   box-shadow: var(--shadow-sm);
 }
 
-/* ===== 多人配音 ===== */
-.tts-multi-section {
+/* ===== 多人配音 — 聊天气泡 ===== */
+
+/* ===== 左侧聊天面板 ===== */
+.tts-chat-panel {
   display: flex;
   flex-direction: column;
-}
-
-.tts-multi-lines {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-bottom: 12px;
-}
-
-.tts-multi-line {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 10px;
-  background: var(--bg-muted);
-  border-radius: 8px;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  background: var(--bg-card);
+  border-radius: 10px;
   border: 1px solid var(--border-default);
+  padding: 16px 20px;
 }
 
-.tts-multi-line-index {
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  background: var(--accent-bg);
-  color: var(--accent);
-  font-size: 11px;
-  font-weight: 600;
+.tts-chat-list {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-right: 4px;
+  min-height: 0;
+}
+
+.tts-chat-list::-webkit-scrollbar {
+  width: 4px;
+}
+.tts-chat-list::-webkit-scrollbar-thumb {
+  background: var(--text-muted);
+  border-radius: 2px;
+}
+
+.tts-chat-empty {
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
 }
 
-.tts-multi-line-speaker {
-  width: 120px;
-  flex-shrink: 0;
-}
-
-.tts-multi-line-text {
-  flex: 1;
-  min-width: 0;
-}
-
-.tts-multi-line-remove {
-  font-size: 14px;
-  color: var(--text-muted);
-  cursor: pointer;
-  flex-shrink: 0;
-  transition: color 0.2s;
-}
-
-.tts-multi-line-remove:hover {
-  color: var(--red);
-}
-
-.tts-multi-add {
-  font-size: 12px;
-  color: var(--accent);
-  border-color: var(--border-hover);
-}
-
-.tts-multi-add:hover {
-  color: var(--accent-hover) !important;
-  border-color: var(--accent) !important;
-  background: var(--accent-bg-hover) !important;
-}
-
-/* ===== 多人角色概览 ===== */
-.tts-multi-summary {
-  flex: 1;
-  min-height: 0;
+/* ===== 气泡 ===== */
+.tts-chat-bubble {
   display: flex;
-  flex-direction: column;
-}
-
-.tts-multi-role-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  overflow-y: auto;
-  flex: 1;
-}
-
-.tts-multi-role-item {
-  display: flex;
-  align-items: center;
   gap: 10px;
   padding: 10px 12px;
-  background: var(--bg-muted);
-  border-radius: 8px;
+  background: var(--bg-card);
   border: 1px solid var(--border-default);
+  border-radius: 10px;
+  transition: border-color 0.15s;
+  align-items: flex-start;
+}
+.tts-chat-bubble:hover {
+  border-color: var(--accent);
 }
 
-.tts-multi-role-avatar {
+.tts-chat-bubble-avatar {
   width: 36px;
   height: 36px;
   border-radius: 50%;
@@ -509,28 +468,165 @@
   font-weight: 600;
   flex-shrink: 0;
 }
-
-.tts-multi-role-avatar.female {
-  background: var(--pink);
+.tts-chat-bubble-avatar.female {
+  background: linear-gradient(135deg, #ec4899, #a855f7);
 }
 
-.tts-multi-role-info {
+.tts-chat-bubble-content {
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
-.tts-multi-role-name {
+.tts-chat-bubble-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tts-chat-bubble-name {
   font-size: 13px;
   font-weight: 500;
   color: var(--text-primary);
 }
 
-.tts-multi-role-text {
+.tts-chat-bubble-index {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.tts-chat-bubble-text {
+  font-size: 14px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 2px 0;
+  line-height: 1.5;
+  word-break: break-word;
+}
+.tts-chat-bubble-text:hover {
+  color: var(--text-primary);
+}
+
+.tts-chat-bubble-input {
+  font-size: 14px;
+}
+
+.tts-chat-bubble-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex-shrink: 0;
+  align-items: center;
+}
+
+.tts-chat-bubble-play,
+.tts-chat-bubble-del {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-size: 12px;
-  color: var(--text-subtitle);
+  cursor: pointer;
+  transition: all 0.15s;
+  color: var(--text-muted);
+  background: var(--bg-muted);
+  border: 1px solid transparent;
+  user-select: none;
+}
+.tts-chat-bubble-play:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--accent-bg-hover);
+}
+.tts-chat-bubble-del:hover {
+  color: #f5222d;
+  border-color: #f5222d;
+  background: #fff1f0;
+}
+
+/* ===== 底部固定输入区 ===== */
+.tts-chat-footer {
+  flex-shrink: 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-default);
+  margin-top: 8px;
+}
+
+.tts-multi-input-row {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.tts-multi-name {
+  flex: 2;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+  cursor: pointer;
   overflow: hidden;
-  text-overflow: ellipsis;
   white-space: nowrap;
+  text-overflow: ellipsis;
+  padding: 0 4px;
+  height: 32px;
+}
+
+.tts-multi-name-placeholder {
+  color: var(--text-muted);
+  font-weight: 400;
+  font-size: 13px;
+}
+
+.tts-multi-emotion {
+  flex: 3;
+  min-width: 0;
+}
+
+/* 情感 Select 高度与右侧输入框对齐（32px） */
+.tts-multi-emotion .ant-select {
+  height: 32px;
+}
+.tts-multi-emotion .ant-select-selector {
+  height: 32px !important;
+  display: flex;
+  align-items: center;
+  border-radius: 6px;
+}
+.tts-multi-emotion .ant-select-selection-item {
+  line-height: 32px;
+}
+
+.tts-multi-text {
+  flex: 6;
+  min-width: 0;
+}
+
+.tts-multi-text .ant-input {
+  background: var(--bg-card) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border-default) !important;
+}
+
+.tts-chat-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+/* ===== 多人模式右栏角色列表 ===== */
+/* .tts-role-panel 作为 flex 容器撑满右侧 */
+.tts-role-panel {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
 }
 
 /* ===== 情感风格标签 ===== */

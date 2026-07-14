@@ -93,10 +93,11 @@ const TTSComponent = () => {
   const [favorites, setFavorites] = useState<Set<string>>(loadFavorites())
 
   // 多人
-  const [lines, setLines] = useState<MultiLine[]>([
-    { id: 0, speakerId: null, text: '' },
-    { id: 1, speakerId: null, text: '' },
-  ])
+  const [lines, setLines] = useState<MultiLine[]>([])
+  const [editingLineId, setEditingLineId] = useState<number | null>(null)
+  const [inputSpeaker, setInputSpeaker] = useState<string>('')
+  const [inputText, setInputText] = useState<string>('')
+  const [inputEmotion, setInputEmotion] = useState<string>('')
 
   // 情感
   const [selectedEmotions, setSelectedEmotions] = useState<string[]>([])
@@ -111,6 +112,26 @@ const TTSComponent = () => {
   const [synthesizing, setSynthesizing] = useState(false)
   const [modelLoading, setModelLoading] = useState(false)
   const [modelLoadingMsg, setModelLoadingMsg] = useState('')
+
+  const currentEmotions = useMemo(() => {
+    if (!inputSpeaker) return []
+    return availableEmotions
+  }, [inputSpeaker, availableEmotions])
+
+  // 多人模式：选择角色后获取可用情感（跟单人一致，通过 IPC getCharacterEmotions）
+  useEffect(() => {
+    if (!inputSpeaker || !window.electronAPI) { setAvailableEmotions([]); return }
+    const speaker = characters.find(s => s.id === inputSpeaker)
+    if (!speaker?.game) { setAvailableEmotions([]); return }
+    if (speaker.game === '🎨 自定义') { setAvailableEmotions([]); return }
+    window.electronAPI.getCharacterEmotions({ game: speaker.game, name: speaker.name }).then((res: any) => {
+      if (res.status === 'ok' && res.data) {
+        setAvailableEmotions(res.data)
+        setInputEmotion(res.data[0] || '')
+      }
+    }).catch(() => {})
+  }, [inputSpeaker, characters])
+
   const handleModeChange = async (newMode: Mode) => {
     setMode(newMode)
     const targetModel = newMode === 'emotion' ? 'voxcpm2' as const : 'tts' as const
@@ -339,6 +360,8 @@ const TTSComponent = () => {
   // 快速试听
   const [previewSpeaker, setPreviewSpeaker] = useState<string | null>(null)
   const audioRef = useRef<HTMLAudioElement | null>(null)
+  const chatListRef = useRef<HTMLDivElement>(null)
+  const editingOriginalRef = useRef<string>('')
 
   const handleSelectSpeaker = async (id: string) => {
     setSelectedSpeaker(id)
@@ -378,6 +401,18 @@ const TTSComponent = () => {
 
   const updateLineText = (id: number, text: string) => {
     setLines(prev => prev.map(l => l.id === id ? { ...l, text } : l))
+  }
+
+  useEffect(() => {
+    if (chatListRef.current) {
+      chatListRef.current.scrollTop = chatListRef.current.scrollHeight
+    }
+  }, [lines])
+
+  const handleAddLine = () => {
+    if (!inputSpeaker || !inputText.trim()) return
+    setLines(prev => [...prev, { id: lineIdCounter++, speakerId: inputSpeaker, text: inputText.trim() }])
+    setInputText('')
   }
 
   const toggleEmotion = (emotion: string) => {
@@ -493,11 +528,6 @@ const TTSComponent = () => {
     }
   }
 
-  const speakerOptions = characters.map(s => ({
-    value: s.id,
-    label: s.name,
-  }))
-
   const fixedTypes = speakerTypes.filter(t => !t.isDynamic)
   const dynamicTypes = speakerTypes.filter(t => t.isDynamic)
 
@@ -565,50 +595,6 @@ const TTSComponent = () => {
             </div>
           )}
 
-          {/* 多人：角色行 */}
-          {mode === 'multi' && (
-            <div className='tts-section tts-multi-section'>
-              <div className='tts-section-title'><><TeamOutlined /> 配音角色</></div>
-              <div className='tts-multi-lines'>
-                {lines.map((line, i) => (
-                  <div key={line.id} className='tts-multi-line'>
-                    <div className='tts-multi-line-index'>{i + 1}</div>
-                    <Select
-                      className='tts-multi-line-speaker'
-                      placeholder='选配音员'
-                      value={line.speakerId}
-                      onChange={val => updateLineSpeaker(line.id, val)}
-                      options={speakerOptions}
-                      size='small'
-                    />
-                    <Input
-                      className='tts-multi-line-text'
-                      placeholder='输入台词...'
-                      value={line.text}
-                      onChange={e => updateLineText(line.id, e.target.value)}
-                      size='small'
-                    />
-                    {lines.length > 1 && (
-                      <CloseOutlined
-                        className='tts-multi-line-remove'
-                        onClick={() => removeLine(line.id)}
-                      />
-                    )}
-                  </div>
-                ))}
-              </div>
-              <Button
-                className='tts-multi-add'
-                icon={<PlusOutlined />}
-                onClick={addLine}
-                block
-                size='small'
-              >
-                添加角色
-              </Button>
-            </div>
-          )}
-
           {/* 情感：情感风格 */}
           {mode === 'emotion' && (
             <div className='tts-section'>
@@ -625,7 +611,152 @@ const TTSComponent = () => {
                 ))}
               </div>
             </div>
+            )}
+
+            {/* 多人：聊天气泡面板 */}
+          {mode === 'multi' && (
+            <div className='tts-chat-panel'>
+              <div className='tts-section-title' style={{ marginBottom: 12 }}>
+                <TeamOutlined /> 💬 对话脚本
+              </div>
+              <div className='tts-chat-list' ref={chatListRef}>
+                {lines.length === 0 ? (
+                  <div className='tts-chat-empty'>
+                    <div className='tts-speaker-empty'>
+                      <SoundOutlined className='tts-empty-icon' />
+                      <p>暂无台词，请在右侧添加</p>
+                    </div>
+                  </div>
+                ) : (
+                  lines.map((line, i) => {
+                    const speaker = characters.find(s => s.id === line.speakerId)
+                    const isEditing = editingLineId === line.id
+                    return (
+                      <div key={line.id} className='tts-chat-bubble'>
+                        <div className={`tts-chat-bubble-avatar${speaker?.gender === 'female' || speaker?.gender === '女' ? ' female' : ''}`}>
+                          {speaker?.name?.charAt(0) || '?'}
+                        </div>
+                        <div className='tts-chat-bubble-content'>
+                          <div className='tts-chat-bubble-header'>
+                            <span className='tts-chat-bubble-name'>{speaker?.name || '未选择'}</span>
+                            <span className='tts-chat-bubble-index'>#{i + 1}</span>
+                          </div>
+                          {isEditing ? (
+                            <Input
+                              className='tts-chat-bubble-input'
+                              size='small'
+                              value={line.text}
+                              onChange={e => updateLineText(line.id, e.target.value)}
+                              onBlur={() => setEditingLineId(null)}
+                              onPressEnter={() => setEditingLineId(null)}
+                              onKeyDown={e => {
+                                if (e.key === 'Escape') {
+                                  updateLineText(line.id, editingOriginalRef.current)
+                                  setEditingLineId(null)
+                                }
+                              }}
+                              autoFocus
+                            />
+                          ) : (
+                            <div
+                              className='tts-chat-bubble-text'
+                              onClick={() => {
+                                editingOriginalRef.current = line.text
+                                setEditingLineId(line.id)
+                              }}
+                            >
+                              {line.text || '（点击输入台词）'}
+                            </div>
+                          )}
+                        </div>
+                        <div className='tts-chat-bubble-actions'>
+                          <div
+                            className='tts-chat-bubble-play'
+                            title='试听'
+                            onClick={() => {
+                              // TODO: 试听单个句子
+                            }}
+                          >
+                            ▶
+                          </div>
+                          <div
+                            className='tts-chat-bubble-del'
+                            title='删除'
+                            onClick={() => removeLine(line.id)}
+                          >
+                            ×
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })
+                )}
+              </div>
+              <div className='tts-chat-footer'>
+                <div className='tts-multi-input-row'>
+                  {/* 列1：角色名称 */}
+                  <div className='tts-multi-name' onClick={() => { setInputSpeaker(''); setInputEmotion('') }}>
+                    {inputSpeaker ? (
+                      <span>{characters.find(s => s.id === inputSpeaker)?.name || '未知角色'}</span>
+                    ) : (
+                      <span className='tts-multi-name-placeholder'>选择角色</span>
+                    )}
+                  </div>
+
+                  {/* 列2：可用情感 */}
+                  <div className='tts-multi-emotion'>
+                    <Select
+                      placeholder={!inputSpeaker ? '先选择角色' : currentEmotions.length === 0 ? '无情感' : '选择情感'}
+                      value={inputEmotion || undefined}
+                      onChange={v => setInputEmotion(v || '')}
+                      options={currentEmotions.map(e => ({ value: e, label: e }))}
+                      size='small'
+                      style={{ width: '100%' }}
+                      allowClear
+                      disabled={!inputSpeaker || currentEmotions.length === 0}
+                    />
+                  </div>
+
+                  {/* 列3：配音文字 */}
+                  <div className='tts-multi-text'>
+                    <TextArea
+                      placeholder='输入台词...'
+                      value={inputText}
+                      onChange={e => setInputText(e.target.value)}
+                      onPressEnter={e => { if (!e.shiftKey) { e.preventDefault(); handleAddLine() } }}
+                      autoSize={{ minRows: 1, maxRows: 3 }}
+                    />
+                  </div>
+
+                  {/* 清除按钮 */}
+                  <Button
+                    icon={<CloseOutlined />}
+                    onClick={() => { setInputSpeaker(''); setInputText(''); setInputEmotion('') }}
+                  />
+                </div>
+                <div className='tts-chat-actions'>
+                  <Button
+                    icon={<PlusOutlined />}
+                    size='small'
+                    onClick={handleAddLine}
+                    disabled={!inputSpeaker || !inputText.trim()}
+                  >
+                    + 添加台词
+                  </Button>
+                  <Button
+                    type='primary'
+                    size='small'
+                    icon={<PlayCircleOutlined />}
+                    onClick={handleSynthesize}
+                    disabled={lines.filter(l => l.speakerId && l.text.trim()).length === 0}
+                  >
+                    {synthesizing ? '合成中...' : '🎬 合成全部'}
+                  </Button>
+                </div>
+              </div>
+            </div>
           )}
+
         </div>
 
         {/* === 右侧预览区 === */}
@@ -756,48 +887,146 @@ const TTSComponent = () => {
             </div>
           )}
 
-          {/* 多人：角色总览 */}
+          {/* 多人：角色列表 — 复用单人模式的筛选+标签+搜索+角色卡片 */}
           {mode === 'multi' && (
-            <div className='tts-section tts-multi-summary'>
-              <div className='tts-section-title'><><TeamOutlined /> 角色概览</></div>
-              {lines.filter(l => l.speakerId).length === 0 ? (
+            <div className='tts-role-panel'>
+              <div className='tts-section-title' style={{ marginBottom: 12 }}>
+                <TeamOutlined /> 🎭 角色列表
+              </div>
+              <Input
+                placeholder='搜索配音员'
+                prefix={<SearchOutlined style={{ color: '#bbb' }} />}
+                value={searchText}
+                onChange={e => setSearchText(e.target.value)}
+                allowClear
+                className='tts-speaker-search'
+              />
+              <div className='tts-speaker-types'>
+                {fixedTypes.map(type => (
+                  <button
+                    key={type.key}
+                    className={`tts-type-btn${activeType === type.key ? ' active' : ''}`}
+                    onClick={() => setActiveType(type.key)}
+                  >
+                    {type.isFavorite && (
+                      <HeartFilled style={{ fontSize: 11, color: '#f59e0b' }} />
+                    )}
+                    {type.isHot && (
+                      <FireFilled style={{ fontSize: 11, color: '#f59e0b' }} />
+                    )}
+                    {type.isCustom && <span style={{ marginRight: 2 }}>🎨</span>}
+                    {type.label}
+                  </button>
+                ))}
+                {dynamicTypes.length > 0 && (
+                  <>
+                    {showAllTags && dynamicTypes.map(type => (
+                      <button
+                        key={type.key}
+                        className={`tts-type-btn${activeType === type.key ? ' active' : ''}`}
+                        onClick={() => setActiveType(type.key)}
+                      >
+                        {type.label}
+                      </button>
+                    ))}
+                    <button
+                      className='tts-type-btn tts-type-btn-more'
+                      onClick={() => setShowAllTags(!showAllTags)}
+                    >
+                      {showAllTags ? '收起 ▲' : '更多 ▼'}
+                    </button>
+                  </>
+                )}
+              </div>
+              {charactersLoading ? (
+                <div className='tts-speaker-list'>
+                  {Array.from({ length: 8 }).map((_, i) => (
+                    <div key={i} className='tts-speaker-skeleton-card'>
+                      <div className='tts-speaker-skeleton-avatar' />
+                      <div className='tts-speaker-skeleton-name' />
+                      <div className='tts-speaker-skeleton-tags'>
+                        <div className='tts-speaker-skeleton-tag' />
+                        <div className='tts-speaker-skeleton-tag' />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : filteredSpeakers.length === 0 ? (
                 <div className='tts-speaker-empty'>
                   <SoundOutlined className='tts-empty-icon' />
-                  <p>请在左侧添加角色和台词</p>
+                  <p>
+                    {activeType === 'favorite'
+                      ? '还没有收藏的配音员哦～'
+                      : '没有找到匹配的配音员'}
+                  </p>
                 </div>
               ) : (
-                <div className='tts-multi-role-list'>
-                  {lines.filter(l => l.speakerId).map(line => {
-                    const speaker = characters.find(s => s.id === line.speakerId)
-                    return (
-                      <div key={line.id} className='tts-multi-role-item'>
-                        <div className={`tts-multi-role-avatar${speaker?.gender === 'female' || speaker?.gender === '女' ? ' female' : ''}`}>
-                          {speaker?.name?.charAt(0) || '?'}
-                        </div>
-                        <div className='tts-multi-role-info'>
-                          <div className='tts-multi-role-name'>{speaker?.name || '未选择'}</div>
-                          <div className='tts-multi-role-text'>{line.text || '（空）'}</div>
-                        </div>
+                <div className='tts-speaker-list'>
+                  {filteredSpeakers.map(speaker => (
+                    <div
+                      key={speaker.id}
+                      className={`tts-speaker-item${inputSpeaker === speaker.id ? ' selected' : ''}`}
+                      onClick={() => setInputSpeaker(speaker.id)}
+                    >
+                      <button
+                        className={`tts-speaker-fav${favorites.has(speaker.id) ? ' favorited' : ''}`}
+                        onClick={e => {
+                          e.stopPropagation()
+                          toggleFavorite(speaker.id)
+                        }}
+                      >
+                        {favorites.has(speaker.id) ? (
+                          <HeartFilled />
+                        ) : (
+                          <HeartOutlined />
+                        )}
+                      </button>
+                      <div
+                        className={`tts-speaker-avatar${speaker.gender === 'female' || speaker.gender === '女' ? ' female' : ''}`}
+                      >
+                        {speaker.name.charAt(0)}
                       </div>
-                    )
-                  })}
+                      <div className='tts-speaker-name'>{speaker.name}</div>
+                      {speaker.game === '🎨 自定义' && (
+                        <button
+                          className='tts-speaker-delete'
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleDeleteCustom(speaker)
+                          }}
+                          title='删除此自定义配音员'
+                        >
+                          ×
+                        </button>
+                      )}
+                      <div className='tts-speaker-tags'>
+                        {speaker.tags.map(tag => (
+                          <span key={tag} className='tts-speaker-tag'>
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
           )}
 
-          <div className='tts-actions'>
-            <Button
-              type='primary'
-              size='large'
-              icon={<PlayCircleOutlined />}
-              onClick={handleSynthesize}
-              disabled={!selectedSpeaker}
-              className='tts-btn-primary'
-            >
-              {synthesizing ? '合成中...' : (mode === 'multi' ? '合并合成' : '合成试听')}
-            </Button>
-          </div>
+          {mode !== 'multi' && (
+            <div className='tts-actions'>
+              <Button
+                type='primary'
+                size='large'
+                icon={<PlayCircleOutlined />}
+                onClick={handleSynthesize}
+                disabled={!selectedSpeaker}
+                className='tts-btn-primary'
+              >
+                {synthesizing ? '合成中...' : '合成试听'}
+              </Button>
+            </div>
+          )}
           <div className='tts-preview-center'>
             {audioUrl ? (
               <AudioPlayer src={audioUrl} />
