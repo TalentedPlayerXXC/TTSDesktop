@@ -20,7 +20,7 @@
 
 ### 🐛 Squashed Some Bugs
 
-- **Fixed missing `</div>` in emotion tags** — Caused JSX parsing error and build failure
+- **Fixed silent WAV export** — `Tone.Offline` + Tone.js effect node mixing caused a connect error "A value with the given key could not be found". Replaced with pure native `OfflineAudioContext` + native Web Audio node chain — all 13 effects remapped to raw Web Audio API, export is finally stable
 
 ### 🔮 Pie in the Sky 🥮
 

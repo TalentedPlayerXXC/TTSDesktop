@@ -267,16 +267,6 @@ const TTSComponent = () => {
     setCharacters(prev => prev.filter(c => c.id !== speaker.id))
   }
 
-  // 清洗无效收藏 ID
-  const cleanFavorites = useCallback((arr: any[]) => {
-    const allIds = new Set(arr.map(c => c.id))
-    setFavorites(prev => {
-      const cleaned = new Set([...prev].filter(id => allIds.has(id)))
-      if (cleaned.size !== prev.size) saveFavorites(cleaned)
-      return cleaned
-    })
-  }, [])
-
   function runRecovery() {
     if (window.electronAPI?.recoverCustomSpeakers) {
       window.electronAPI.recoverCustomSpeakers().then(res => {

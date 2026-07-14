@@ -20,7 +20,7 @@
 
 ### 🐛 顺手修了点东西
 
-- **修复 emotion 标签缺失 </div>** — 情感模式 JSX 括号没闭合，导致 build 报错
+- **修复导出静音** — `Tone.Offline` + Tone.js 效果节点混用导致 connect 报错「A value with the given key could not be found」，改用纯原生 `OfflineAudioContext` + 原生 Web Audio 节点重建效果链，13 种效果全部原生映射，导出终于稳定
 
 ---
 

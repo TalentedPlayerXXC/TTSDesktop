@@ -1,14 +1,16 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { message } from 'antd'
+import { message, Button } from 'antd'
 import {
   UploadOutlined,
   SoundOutlined,
+  DownloadOutlined,
 } from '@ant-design/icons'
 import * as Tone from 'tone'
 import SWPlayer, { type SWPlayerHandle } from './SWPlayer'
 import effectsList, { type EffectDef, type EffectParam } from './effects'
 import presets from './presets'
 import { usePresets } from './usePresets'
+import { createNativeEffect } from './nativeEffects'
 import './styles.css'
 
 /* ------------------------------------------------------------------ */
@@ -147,10 +149,11 @@ function SoundWorkshop() {
   }, [playing])
 
   /* ---- 导出 WAV ------------------------------------------------- */
-  const audioBufferToWav = (audioBuffer: AudioBuffer): Blob => {
+  function audioBufferToWav(audioBuffer: AudioBuffer, volumeDb = 0) {
     const numChannels = audioBuffer.numberOfChannels
     const sampleRate = audioBuffer.sampleRate
     const bitDepth = 16
+    const volume = Math.pow(10, volumeDb / 20) // dB → 线性增益
     const bytesPerSample = bitDepth / 8
     const blockAlign = numChannels * bytesPerSample
     const dataLength = audioBuffer.length * blockAlign
@@ -180,14 +183,17 @@ function SoundWorkshop() {
     for (let c = 0; c < numChannels; c++) channels.push(audioBuffer.getChannelData(c))
 
     let offset = 44
+    let maxSample = 0
     for (let i = 0; i < audioBuffer.length; i++) {
       for (let c = 0; c < numChannels; c++) {
-        const s = Math.max(-1, Math.min(1, channels[c][i]))
+        const s = Math.max(-1, Math.min(1, channels[c][i] * volume))
+        if (Math.abs(s) > maxSample) maxSample = Math.abs(s)
         view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true)
         offset += 2
       }
     }
 
+    console.log('[export] maxSample:', maxSample, 'silent?', maxSample < 0.001)
     return new Blob([arrayBuffer], { type: 'audio/wav' })
   }
 
@@ -199,39 +205,88 @@ function SoundWorkshop() {
     messageApi.loading({ content: '正在渲染效果...', key: 'export', duration: 0 })
 
     try {
-      const duration = playerRef.current.buffer.duration
+      const audioBuffer = playerRef.current.buffer.get() as AudioBuffer
+      if (!audioBuffer) throw new Error('无法获取音频缓冲')
 
-      // 用 Tone.Offline 离线渲染（自动包含当前的效果链）
-      const renderedBuffer = await Tone.Offline(() => {
-        // 创建一个新的 Player 播放原始音频
-        const player = new Tone.Player(playerRef.current!.buffer)
-        
-        // 重建相同的效果链
-        let node: Tone.ToneAudioNode = player
-        for (const ae of activeEffects) {
-          const effect = ae.def.create(ae.values)
-          node.connect(effect as any)
-          node = effect as any
+      const sampleRate = audioBuffer.sampleRate
+      const numChannels = audioBuffer.numberOfChannels
+
+      // --- 检查是否有 Pitch 效果（需要调整 playbackRate） ---
+      const pitchEffect = activeEffects.find((ae) => ae.def.id === 'pitch')
+      let playbackRate = 1
+      if (pitchEffect) {
+        // 半音 → 频率比：2^(semitones/12)
+        playbackRate = Math.pow(2, (pitchEffect.values.pitch ?? 0) / 12)
+      }
+
+      // --- 调整时长（playbackRate ≠ 1 时长会变） ---
+      const dur = audioBuffer.duration / playbackRate
+      const totalSamples = Math.ceil(dur * sampleRate)
+
+      // --- 创建 OfflineAudioContext ---
+      const ctx = new OfflineAudioContext(numChannels, totalSamples, sampleRate)
+
+      // --- 创建 BufferSource（原生） ---
+      const source = ctx.createBufferSource()
+      source.buffer = audioBuffer
+      source.playbackRate.value = playbackRate
+
+      // --- 使用原生 AudioNode 重建效果链 ---
+      const allOscillators: OscillatorNode[] = []
+      let currentNode: AudioNode = source
+
+      for (const ae of activeEffects) {
+        if (ae.def.id === 'pitch') continue // 已在 source 上处理
+        const result = createNativeEffect(ctx, currentNode, ae.def.id, ae.values)
+        currentNode = result.output
+        if (result.oscillators) {
+          allOscillators.push(...result.oscillators)
         }
-        node.toDestination()
-        
-        // 应用输出音量
-        Tone.getDestination().volume.value = outputVolume
-        
-        player.start(0)
-      }, duration)
+      }
 
-      // 转为 WAV 下载
-      const wavBlob = audioBufferToWav(renderedBuffer)
+      // --- 最后一个节点连到 destination ---
+      currentNode.connect(ctx.destination)
+
+      // --- 启动所有振荡器（LFO 等） ---
+      for (const osc of allOscillators) {
+        osc.start(0)
+      }
+
+      // --- 启动音源并渲染 ---
+      source.start(0)
+      const renderedBuffer = await ctx.startRendering()
+
+      console.log(
+        '[export] native render OK —',
+        'channels:', renderedBuffer.numberOfChannels,
+        'length:', renderedBuffer.length,
+        'duration:', renderedBuffer.duration,
+      )
+
+      // --- 输出音量（dB 增益） ---
+      const wavBlob = audioBufferToWav(renderedBuffer, outputVolume)
+
+      // --- 检查是否静音 ---
+      let maxSample = 0
+      for (let c = 0; c < renderedBuffer.numberOfChannels; c++) {
+        const data = renderedBuffer.getChannelData(c)
+        for (let i = 0; i < Math.min(data.length, 10000); i++) {
+          if (Math.abs(data[i]) > maxSample) maxSample = Math.abs(data[i])
+        }
+      }
+      console.log('[export] maxSample (first 10k):', maxSample, 'silent?', maxSample < 0.001)
+
+      // --- 下载 ---
       const link = document.createElement('a')
       link.href = URL.createObjectURL(wavBlob)
       link.download = (file.name.replace(/\.[^.]+$/, '') || 'processed') + '_processed.wav'
       link.click()
       messageApi.success({ content: '导出完成', key: 'export' })
-    } catch {
-      messageApi.error({ content: '渲染导出失败', key: 'export' })
+    } catch (e) {
+      console.error('[export] render error:', e)
+      messageApi.error({ content: '渲染导出失败: ' + (e instanceof Error ? e.message : '未知错误'), key: 'export' })
     }
-  }, [playerRef, activeEffects, file, messageApi])
+  }, [playerRef, activeEffects, file, messageApi, outputVolume])
 
   /* ---- 效果链变化时重建 ------------------------------------------ */
   useEffect(() => {
@@ -348,8 +403,11 @@ function SoundWorkshop() {
                 onClear={() => { setPlaying(false); setFile(null); setAudioUrl('') }}
                 onTogglePlay={togglePlay}
                 playing={playing}
-                onDownload={handleExport}
               />
+
+              <Button type='primary' icon={<DownloadOutlined />} onClick={handleExport} block style={{ marginTop: 8 }}>
+                导出 WAV
+              </Button>
 
               <div className='sw-output-volume'>
                 <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>输出音量</span>

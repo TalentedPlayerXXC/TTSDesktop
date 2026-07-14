@@ -489,17 +489,38 @@ app.on('activate', () => {
   }
 })
 
-// 应用退出前强制清理（等所有异步清理完成再退）
+// 递归杀整个进程树（含 Python multiprocessing 子进程）
+const { execSync } = require('child_process')
+function killProcessTree(pid, signal = 'SIGKILL') {
+  try {
+    const out = execSync(`pgrep -P ${pid}`, { encoding: 'utf-8', timeout: 2000 }).trim()
+    if (out) out.split('\n').filter(Boolean).forEach(c => killProcessTree(parseInt(c), signal))
+  } catch (e) {
+    if (e.status !== 1) console.error('[TTS] pgrep error:', e.message)
+  }
+  try { process.kill(pid, signal) } catch { /* 已死 */ }
+}
+
+// 应用退出——先 SIGTERM 让 Python 进程树优雅释放资源，再递归 SIGKILL
 app.on('will-quit', (event) => {
   event.preventDefault()
-  const forceExit = setTimeout(() => app.exit(), 8000)
 
-  stopServer()    // SIGTERM → 5s → SIGKILL（内部自带 setTimeout）
-  stopMongoWorker() // 发 disconnect → 1s → kill
+  if (serverProcess) {
+    serverProcess.kill('SIGTERM')
+  }
+  if (mongoWorker) {
+    mongoWorker.kill('SIGTERM')
+  }
 
-  // 等所有清理完成再退
   setTimeout(() => {
-    clearTimeout(forceExit)
+    if (serverProcess) {
+      killProcessTree(serverProcess.pid)
+      serverProcess = null
+    }
+    if (mongoWorker) {
+      mongoWorker.kill('SIGKILL')
+      mongoWorker = null
+    }
     app.exit()
-  }, 6500) // 大于 stopServer 的 5s + stopMongoWorker 的 1s
+  }, 500)
 })

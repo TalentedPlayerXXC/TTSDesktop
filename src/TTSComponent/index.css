@@ -668,12 +668,6 @@
   100% { opacity: 0.6; }
 }
 
-@keyframes tts-shimmer {
-  0% { opacity: 0.6; }
-  50% { opacity: 1; }
-  100% { opacity: 0.6; }
-}
-
 .tts-speaker-skeleton-card {
   display: flex;
   flex-direction: column;
