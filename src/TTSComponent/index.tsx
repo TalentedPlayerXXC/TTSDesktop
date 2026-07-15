@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react'
-import { Input, Button, Select, message } from 'antd'
+import { Input, Button, Select, Popconfirm, message } from 'antd'
 import {
   SearchOutlined,
   PlayCircleOutlined,
@@ -19,7 +19,7 @@ import AudioPlayer from '../components/AudioPlayer'
 import '../components/AudioPlayer.css'
 import { loadCustomSpeakers, saveCustomSpeaker, deleteCustomSpeaker, loadFavorites, saveFavorites } from '../services/customSpeaker'
 import { getSessionCache, setSessionCache } from '../services/sessionCache'
-import { clone, batchClone, voxClone, ensureModelLoaded, getCurrentModel, getOutputUrl } from '../services/index'
+import { clone, dialogue, voxClone, ensureModelLoaded, getCurrentModel, getOutputUrl } from '../services/index'
 import type { BatchCloneItem } from '../services/types'
 import CyberpunkLoading from '../components/CyberpunkLoading'
 import './index.css'
@@ -128,6 +128,7 @@ const TTSComponent = () => {
       if (res.status === 'ok' && res.data) {
         setAvailableEmotions(res.data)
         setInputEmotion(res.data[0] || '')
+        if (res.data[0]) setSelectedEmotion(res.data[0])
       }
     }).catch(() => {})
   }, [inputSpeaker, characters])
@@ -137,7 +138,7 @@ const TTSComponent = () => {
     const targetModel = newMode === 'emotion' ? 'voxcpm2' as const : 'tts' as const
     if (getCurrentModel() !== targetModel) {
       setModelLoading(true)
-      setModelLoadingMsg(targetModel === 'voxcpm2' ? '正在加载情感模型 VoxCPM2...' : '正在加载 TTS 模型...')
+      setModelLoadingMsg(targetModel === 'voxcpm2' ? '🎭 情感模块正在加载戏精属性...' : '🏃 配音员正在赶来的路上...')
       await ensureModelLoaded(targetModel)
       setModelLoading(false)
     }
@@ -265,6 +266,7 @@ const TTSComponent = () => {
     deleteCustomSpeaker(speaker.id)
     await window.electronAPI?.deleteCustomSpeaker?.({ name: speaker.name })
     setCharacters(prev => prev.filter(c => c.id !== speaker.id))
+    message.success(`已删除「${speaker.name}」`)
   }
 
   function runRecovery() {
@@ -374,6 +376,7 @@ const TTSComponent = () => {
     const res = await window.electronAPI.getCharacterEmotions({ game: speaker.game, name: speaker.name })
     if (res.status === 'ok' && res.data) {
       setAvailableEmotions(res.data)
+      if (res.data[0]) setSelectedEmotion(res.data[0])
     }
   }
 
@@ -469,15 +472,10 @@ const TTSComponent = () => {
         const loaded = await ensureModelLoaded('tts')
         if (!loaded) { messageApi.error('模型加载失败'); setSynthesizing(false); return }
 
-        const res = await batchClone({ items, merge: true })
+        const res = await dialogue({ items })
         if (res.data.success) {
-          if (res.data.merged) {
-            setAudioUrl(getOutputUrl(res.data.merged.audio_url))
-            setAudioFilename(res.data.merged.filename)
-          } else if (res.data.files?.length > 0) {
-            setAudioUrl(getOutputUrl(res.data.files[0].audio_url))
-            setAudioFilename(res.data.files[0].filename)
-          }
+          setAudioUrl(getOutputUrl(res.data.audio_url))
+          setAudioFilename(res.data.filename)
           messageApi.success(`合成完成！共 ${res.data.generated} 条`)
         } else {
           messageApi.error('合成失败')
@@ -852,16 +850,21 @@ const TTSComponent = () => {
                       </div>
                       <div className='tts-speaker-name'>{speaker.name}</div>
                       {speaker.game === '🎨 自定义' && (
-                        <button
-                          className='tts-speaker-delete'
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleDeleteCustom(speaker)
-                          }}
-                          title='删除此自定义配音员'
+                        <Popconfirm
+                          title={`删除「${speaker.name}」？`}
+                          description='删除后无法恢复'
+                          okText='删除'
+                          okType='danger'
+                          cancelText='取消'
+                          onConfirm={() => handleDeleteCustom(speaker)}
                         >
-                          ×
-                        </button>
+                          <button
+                            className='tts-speaker-delete'
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <CloseOutlined />
+                          </button>
+                        </Popconfirm>
                       )}
                       <div className='tts-speaker-tags'>
                         {speaker.tags.map(tag => (
@@ -978,16 +981,21 @@ const TTSComponent = () => {
                       </div>
                       <div className='tts-speaker-name'>{speaker.name}</div>
                       {speaker.game === '🎨 自定义' && (
-                        <button
-                          className='tts-speaker-delete'
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleDeleteCustom(speaker)
-                          }}
-                          title='删除此自定义配音员'
+                        <Popconfirm
+                          title={`删除「${speaker.name}」？`}
+                          description='删除后无法恢复'
+                          okText='删除'
+                          okType='danger'
+                          cancelText='取消'
+                          onConfirm={() => handleDeleteCustom(speaker)}
                         >
-                          ×
-                        </button>
+                          <button
+                            className='tts-speaker-delete'
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <CloseOutlined />
+                          </button>
+                        </Popconfirm>
                       )}
                       <div className='tts-speaker-tags'>
                         {speaker.tags.map(tag => (

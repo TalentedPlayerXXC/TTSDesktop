@@ -5,9 +5,10 @@ import LoginComp from './LoginComp';
 import Mascot from './components/Mascot';
 import SidebarMenu from './components/SidebarMenu';
 import CyberpunkLoading from './components/CyberpunkLoading';
+import ModelDownload from './components/ModelDownload';
 import ErrorBoundary from './components/ErrorBoundary';
 import { SettingsProvider, useSettings } from './services/SettingsContext';
-import { ensureModelLoaded } from './services/index';
+import { ensureModelLoaded, loadModel, setCurrentModel } from './services/index';
 import { updateServerPort } from './services/request';
 import './App.css';
 import Routers from './routes';
@@ -46,6 +47,19 @@ function AppContent() {
   const [loadingMessage, setLoadingMessage] = useState('');
   const [loadingModelName, setLoadingModelName] = useState('');
 
+  const handleModelLoad = async () => {
+    setModelLoading(true)
+    setLoadingMessage('🏃 配音员正在赶来的路上...')
+    setLoadingModelName('TTS')
+    try {
+      const res = await loadModel({ model: 'tts' })
+      if (res.data?.success) {
+        setCurrentModel('tts')
+      }
+    } catch {}
+    setModelLoading(false)
+  }
+
   const isDark = settings.theme === 'dark'
     || (settings.theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
 
@@ -55,6 +69,10 @@ function AppContent() {
 
   useEffect(() => {
     updateServerPort()
+    // 同步主进程预载的模型
+    ;(window as any).electronAPI?.getStartupModel?.().then((model: string | null) => {
+      if (model === 'tts') setCurrentModel('tts')
+    })
   }, [])
 
   const selectedKey = items.some((item) => item.key === pathname)
@@ -70,7 +88,7 @@ function AppContent() {
   const handleNavigate = useCallback(async (path: string) => {
     if (path === '/voice-design') {
       setModelLoading(true);
-      setLoadingMessage('正在加载 VoxCPM2 模型...');
+      setLoadingMessage('🎛️ 调音师拧了拧旋钮...');
       setLoadingModelName('VoxCPM2');
 
       const ok = await ensureModelLoaded('voxcpm2');
@@ -82,8 +100,8 @@ function AppContent() {
       }
     } else if (path === '/tts' || path === '/tts-beta') {
       setModelLoading(true);
-      setLoadingMessage('正在加载 Qwen3 TTS 模型...');
-      setLoadingModelName('Qwen3 TTS');
+      setLoadingMessage('🏃 配音员正在赶来的路上...');
+      setLoadingModelName('TTS');
 
       const ok = await ensureModelLoaded('tts');
       setModelLoading(false);
@@ -99,6 +117,7 @@ function AppContent() {
   return (
     <ConfigProvider theme={{ algorithm: isDark ? darkAlgorithm : defaultAlgorithm }}>
       <div className='app'>
+        <ModelDownload onComplete={handleModelLoad} />
         <LoginComp />
         <SidebarMenu
           currentPath={selectedKey}

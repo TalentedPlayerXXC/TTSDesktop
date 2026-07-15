@@ -41,3 +41,4 @@ characters/*
 
 # MongoDB connection config (contains DB URI, do not commit)
 db.js
+models/

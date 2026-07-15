@@ -58,33 +58,46 @@ export function loadModel(data: ModelLoadRequest) {
 }
 
 // 卸载模型
-export function unloadModel(data: ModelUnloadRequest) {
-  return qwens<ModelUnloadResponse>({
-    method: 'post',
-    url: '/model/unload',
-    data,
+export async function unloadModel(model: 'tts' | 'voxcpm2'): Promise<{
+  success: boolean
+  model: string
+  action: 'unloaded'
+}> {
+  const port = getServerPortValue()
+  const res = await fetch(`http://localhost:${port}/model/unload`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ model }),
   })
+  return res.json()
 }
 
-// 确保模型已加载（先卸载再加载，保证干净状态）
-let currentLoadedModel: 'tts' | 'voxcpm2' | null = null
+// 全部卸载（加载新模型前清场）
+async function unloadAll(): Promise<void> {
+  try {
+    const port = getServerPortValue()
+    await fetch(`http://localhost:${port}/model/unload`, { method: 'POST' })
+  } catch {}
+}
 
-// 导出当前模型，方便其他组件读取
+// 确保模型已加载（先全部卸载再加载，保证干净状态）
+let _currentModel: 'tts' | 'voxcpm2' | null = null
+
 export function getCurrentModel(): 'tts' | 'voxcpm2' | null {
-  return currentLoadedModel
+  return _currentModel
+}
+
+export function setCurrentModel(model: 'tts' | 'voxcpm2' | null): void {
+  _currentModel = model
 }
 
 export async function ensureModelLoaded(model: 'tts' | 'voxcpm2'): Promise<boolean> {
-  if (currentLoadedModel === model) return true
-
+  if (_currentModel === model) return true
+  await unloadAll()
   try {
-    if (currentLoadedModel) {
-      await unloadModel({ model: currentLoadedModel })
-    }
-
     const loadRes = await loadModel({ model })
     if (loadRes.data.success) {
-      currentLoadedModel = model
+      _currentModel = model
       return true
     }
     return false
@@ -94,7 +107,16 @@ export async function ensureModelLoaded(model: 'tts' | 'voxcpm2'): Promise<boole
 }
 
 // 单条语音克隆
-export function clone(data: CloneRequest) {
+export async function clone(data: CloneRequest, returnRaw = false) {
+  if (returnRaw) {
+    const port = getServerPortValue()
+    const res = await fetch(`http://localhost:${port}/clone`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...data, save_file: false }),
+    })
+    return res.arrayBuffer()
+  }
   return qwens<CloneResponse>({
     method: 'post',
     url: '/clone',
@@ -115,7 +137,16 @@ export function stt(data: STTRequest) {
 }
 
 // VoxCPM2 声音设计
-export function voxDesign(data: VoxDesignRequest) {
+export async function voxDesign(data: VoxDesignRequest, returnRaw = false) {
+  if (returnRaw) {
+    const port = getServerPortValue()
+    const res = await fetch(`http://localhost:${port}/vox/design`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...data, save_file: false }),
+    })
+    return res.arrayBuffer()
+  }
   return qwens<VoxDesignResponse>({
     method: 'post',
     url: '/vox/design',
@@ -127,7 +158,16 @@ export function voxDesign(data: VoxDesignRequest) {
 }
 
 // VoxCPM2 克隆 + 情感
-export function voxClone(data: VoxCloneRequest) {
+export async function voxClone(data: VoxCloneRequest, returnRaw = false) {
+  if (returnRaw) {
+    const port = getServerPortValue()
+    const res = await fetch(`http://localhost:${port}/vox/clone`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...data, save_file: false }),
+    })
+    return res.arrayBuffer()
+  }
   return qwens<VoxCloneResponse>({
     method: 'post',
     url: '/vox/clone',
@@ -139,7 +179,16 @@ export function voxClone(data: VoxCloneRequest) {
 }
 
 // 批量配音
-export function batchClone(data: BatchCloneRequest) {
+export async function batchClone(data: BatchCloneRequest, returnRaw = false) {
+  if (returnRaw) {
+    const port = getServerPortValue()
+    const res = await fetch(`http://localhost:${port}/batch-clone`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...data, return_raw: true }),
+    })
+    return res.arrayBuffer()
+  }
   return qwens<BatchCloneResponse>({
     method: 'post',
     url: '/batch-clone',
@@ -148,7 +197,16 @@ export function batchClone(data: BatchCloneRequest) {
 }
 
 // 多角色对话
-export function dialogue(data: DialogueRequest) {
+export async function dialogue(data: DialogueRequest, returnRaw = false) {
+  if (returnRaw) {
+    const port = getServerPortValue()
+    const res = await fetch(`http://localhost:${port}/dialogue`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...data, return_raw: true }),
+    })
+    return res.arrayBuffer()
+  }
   return qwens<DialogueResponse>({
     method: 'post',
     url: '/dialogue',

@@ -1,0 +1,128 @@
+.model-download-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.model-download-card {
+  background: #1a1a2e;
+  border: 1px solid #7c3aed;
+  border-radius: 12px;
+  padding: 32px;
+  width: 480px;
+  color: #e0e0e0;
+}
+
+.model-download-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.model-download-header h2 {
+  margin: 0;
+  font-size: 18px;
+  color: #c4b5fd;
+}
+
+.model-download-icon {
+  font-size: 24px;
+}
+
+.model-download-disclaimer {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 12px;
+  color: #fca5a5;
+  margin-bottom: 20px;
+  line-height: 1.5;
+}
+
+.model-download-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: rgba(124, 58, 237, 0.1);
+  border: 1px solid rgba(124, 58, 237, 0.2);
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+
+.model-download-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.model-download-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: #c4b5fd;
+}
+
+.model-download-size {
+  font-size: 11px;
+  color: #9ca3af;
+}
+
+.model-download-btn {
+  padding: 6px 20px;
+  background: #7c3aed;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: background 0.2s;
+}
+
+.model-download-btn:hover {
+  background: #6d28d9;
+}
+
+.model-download-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.model-download-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  margin-left: 12px;
+}
+
+.model-download-progress-bar {
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.model-download-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #7c3aed, #a78bfa);
+  border-radius: 3px;
+  transition: width 0.3s;
+}
+
+.model-download-progress-text {
+  font-size: 11px;
+  color: #9ca3af;
+}
+
+.model-download-hint {
+  text-align: center;
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 12px;
+}

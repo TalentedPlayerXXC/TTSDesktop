@@ -6,7 +6,7 @@
 
 > Make words talk and give voices a soul ✨
 
-Turn your computer into a dubbing studio in one second. **Smart Dubbing · Voice Cloning · Voice Design · Sound Workshop · Multi-Character** — all running locally, no cloud, no extra cost (electricity bill not included).
+Turn your computer into a dubbing studio in one second. **Smart Dubbing · Voice Cloning · Voice Design · Sound Workshop · Multi-Character** — all running locally, no cloud, no extra cost (electricity bill not included). Models auto-download on first launch, no manual foraging on ModelScope.
 
 Built with Electron + React + Tone.js. **Apple Silicon only** — don't bother with Intel, it's not gonna happen 🤡.
 

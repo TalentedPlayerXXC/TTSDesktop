@@ -47,7 +47,7 @@ function TTSComponentBeta() {
     }
 
     setLoading(true)
-    setLoadingMessage('正在加载 Qwen3 TTS 模型...')
+    setLoadingMessage('🏃 配音员正在赶来的路上...')
 
     try {
       const ok = await ensureModelLoaded('tts')

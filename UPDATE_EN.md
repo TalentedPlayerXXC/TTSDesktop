@@ -2,6 +2,31 @@
 
 # Changelog
 
+## 2026-07-15
+
+### ✨ New Features
+
+- **📥 Auto Model Download** — First launch pops a download dialog. Backend `git clone`s from ModelScope, frontend polls every 500ms. Disclaimer ready: "ModelScope is special — no resume support 🙏"
+- **🗑️ Custom Speaker Delete Confirmation** — No more accidental deletions. Popconfirm asks "you sure?" before yeeting
+- **🎯 Default Emotion Auto-Select** — Picking a character now auto-selects the first emotion. One less click
+- **🎭 Sassy Loading Messages** — "Voice actor is on the way 🏃" / "Sound engineer is twisting knobs 🎛️" / "Emotion module is loading drama queen mode 🎭"
+
+### 🔧 Refactors
+
+- **Multi-voice switched to `/dialogue` API** — Backend handles cross-character gaps and crossfades. Frontend just sends an array
+- **`return_raw` for synthesis endpoints** — All synthesis APIs can return raw WAV binary now. One request instead of two
+- **Unload-all-before-load** — `POST /model/unload` with no body clears everything before loading a new model. No more tracking, no 10GB memory leak
+- **Direct load after download** — Download done → straight `POST /model/load {"model": "tts"}`. No detour through `ensureModelLoaded`
+
+### 🐛 Squashed Some Bugs
+
+- **Dialog no longer deadlocks** — `onComplete` no longer waits for `loadInitialModels` IPC. Close first, ask questions later
+- **No forced load on startup** — Checks `/models-info` first. If files are missing, skips loading instead of throwing FileNotFoundError
+- **Preload sync** — New IPC `get-startup-model` so the renderer knows what main process loaded. `_currentModel` stays in sync
+- **Popconfirm over Modal.confirm** — Lighter confirmations. No heavy modal dialog for a simple "are you sure?"
+
+---
+
 ## 2026-07-14
 
 ### ✨ New Features

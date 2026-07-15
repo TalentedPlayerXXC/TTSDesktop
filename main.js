@@ -3,6 +3,7 @@ const path = require('path')
 const fs = require('fs')
 const { spawn, fork } = require('child_process')
 const http = require('http')
+const https = require('https')
 
 let mongoWorker = null
 
@@ -282,6 +283,11 @@ function getCharacterDir(game, name) {
   return path.join(getCharactersBase(), folder, name)
 }
 
+// ==================== 模型加载（主进程预载后通知渲染进程） ====================
+let _startupModel = null
+
+ipcMain.handle('get-startup-model', () => _startupModel)
+
 // 暴露后端端口给渲染进程
 ipcMain.handle('get-server-port', () => ACTUAL_PORT)
 
@@ -449,6 +455,30 @@ ipcMain.handle('recover-custom-speakers', async () => {
   }
 })
 
+// ==================== 模型下载（后端代理） ====================
+
+ipcMain.handle('start-model-download', async (event, modelKey) => {
+  try {
+    const res = await fetch(`http://${SERVER_HOST}:${ACTUAL_PORT}/model/download`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: modelKey, source: 'modelscope' }),
+    })
+    return await res.json()
+  } catch (e) {
+    return { status: 'error', error: e.message }
+  }
+})
+
+ipcMain.handle('get-download-status', async (event, modelKey) => {
+  try {
+    const res = await fetch(`http://${SERVER_HOST}:${ACTUAL_PORT}/model/download/status/${modelKey}`)
+    return await res.json()
+  } catch (e) {
+    return { status: 'error', error: e.message }
+  }
+})
+
 app.whenReady().then(async () => {
   try {
     await startServer()
@@ -457,12 +487,25 @@ app.whenReady().then(async () => {
     await waitForServer()
     console.log('[TTS] 服务就绪')
 
-    console.log('[TTS] 加载 Qwen3 TTS 模型...')
-    const loaded = await loadTTTModel()
-    if (!loaded) {
-      console.error('[TTS] 模型加载失败，渲染进程会按需重试')
-    } else {
-      console.log('[TTS] 模型加载完成')
+    // 检查模型文件是否存在，不存在就跳过加载，交给 ModelDownload
+    try {
+      const infoRes = await fetch(`http://${SERVER_HOST}:${ACTUAL_PORT}/models-info`)
+      const allInfo = await infoRes.json()
+      const qwen = allInfo['qwenTTS_0.6B_MLX']
+      if (qwen && qwen.downloaded) {
+        console.log('[TTS] 模型文件已存在，加载 Qwen3 TTS 模型...')
+        const loaded = await loadTTTModel()
+        if (!loaded) {
+          console.error('[TTS] 模型加载失败，渲染进程会按需重试')
+        } else {
+          console.log('[TTS] 模型加载完成')
+          _startupModel = 'tts'
+        }
+      } else {
+        console.log('[TTS] 模型文件不存在，跳过初始加载，等待 ModelDownload')
+      }
+    } catch (e) {
+      console.error('[TTS] 检查模型状态失败，跳过初始加载:', e.message)
     }
   } catch (err) {
     console.error('[TTS] 服务启动失败:', err.message)

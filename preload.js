@@ -15,4 +15,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     getCharacters: () => ipcRenderer.invoke('mongo-get-characters'),
     getTags: () => ipcRenderer.invoke('mongo-get-tags'),
   },
+  startModelDownload: (modelKey) => ipcRenderer.invoke('start-model-download', modelKey),
+  getDownloadStatus: (modelKey) => ipcRenderer.invoke('get-download-status', modelKey),
+  getStartupModel: () => ipcRenderer.invoke('get-startup-model'),
 })
