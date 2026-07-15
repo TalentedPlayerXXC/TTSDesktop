@@ -25,6 +25,8 @@
 - **No forced load on startup** — Checks `/models-info` first. If files are missing, skips loading instead of throwing FileNotFoundError
 - **Preload sync** — New IPC `get-startup-model` so the renderer knows what main process loaded. `_currentModel` stays in sync
 - **Popconfirm over Modal.confirm** — Lighter confirmations. No heavy modal dialog for a simple "are you sure?"
+- **DevTools uses app.isPackaged** — Replaced NODE_ENV check. DevTools auto-closes when packaged, safer
+- **Drag & drop magic byte validation** — No more trusting file extensions. Checks RIFF/ID3/fLaC/OggS/ftyp headers, malicious files can't slip through
 
 ---
 

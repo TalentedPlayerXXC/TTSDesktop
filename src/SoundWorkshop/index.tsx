@@ -313,11 +313,36 @@ function SoundWorkshop() {
   }, [disposeChain])
 
   /* ---- 上传：拖拽 ------------------------------------------------ */
+  const AUDIO_MAGIC: Record<string, Uint8Array> = {
+    'RIFF': new Uint8Array([0x52, 0x49, 0x46, 0x46]), // WAV
+    'ID3':  new Uint8Array([0x49, 0x44, 0x33]),       // MP3 (ID3v2)
+    'fLaC': new Uint8Array([0x66, 0x4C, 0x61, 0x43]), // FLAC
+    'OggS': new Uint8Array([0x4F, 0x67, 0x67, 0x53]), // OGG
+  }
+
+  async function checkAudioSignature(file: File): Promise<boolean> {
+    try {
+      const buf = await file.slice(0, 8).arrayBuffer()
+      const head = new Uint8Array(buf)
+      // 检查魔数
+      for (const [, magic] of Object.entries(AUDIO_MAGIC)) {
+        if (magic.every((b, i) => head[i] === b)) return true
+      }
+      // M4A/MP4: bytes 4-7 = ftyp
+      if (head[4] === 0x66 && head[5] === 0x74 && head[6] === 0x79 && head[7] === 0x70) return true
+      // MP3 (无 ID3v2 头): 第一个字节是 0xFF (MPEG 同步)
+      if (head[0] === 0xFF) return true
+      return false
+    } catch { return false }
+  }
+
   const handleDrop = useCallback(
-    (e: React.DragEvent) => {
+    async (e: React.DragEvent) => {
       e.preventDefault()
       const f = e.dataTransfer.files[0]
-      if (f && (f.type.includes('audio') || f.name.match(/\.(wav|mp3|flac|ogg|m4a)$/i))) {
+      const validExt = f?.name?.match(/\.(wav|mp3|flac|ogg|m4a)$/i)
+      const validSig = f ? await checkAudioSignature(f) : false
+      if (f && (validExt || validSig)) {
         handleFile(f)
       } else {
         messageApi.warning('请上传音频文件')

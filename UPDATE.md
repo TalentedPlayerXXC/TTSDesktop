@@ -25,6 +25,8 @@
 - **模型初始化不硬加载** — 启动时先查 `/models-info`，文件不存在就跳过，不报一脸 FileNotFoundError 再让用户看
 - **主进程预载 = 渲染进程知道** — 新增 IPC `get-startup-model`，渲染进程启动时同步，`_currentModel` 不落空
 - **Popconfirm 代替 Modal.confirm** — 轻量确认，不弹弹窗不挡视线
+- **DevTools 改用 app.isPackaged** — 去掉 `NODE_ENV` 判断，打包后自动关 DevTools，更安全
+- **拖拽上传加文件魔数校验** — 不只查后缀名，读文件头验证真身（RIFF/ID3/fLaC/OggS/ftyp），恶意文件绕不过去了
 
 ---
 

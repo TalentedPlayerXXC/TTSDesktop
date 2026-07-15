@@ -6,8 +6,6 @@ const http = require('http')
 const https = require('https')
 
 let mongoWorker = null
-
-const isDev = process.env.NODE_ENV === 'development'
 const SERVER_HOST = '127.0.0.1'
 const STARTUP_TIMEOUT = 120000
 const HEALTH_CHECK_INTERVAL = 500
@@ -215,11 +213,10 @@ function createWindow() {
     return { action: 'deny' }
   })
 
-  if (isDev) {
-    mainWindow.loadFile(path.join(__dirname, 'dist', 'index.html'))
+  mainWindow.loadFile(path.join(__dirname, 'dist', 'index.html'))
+  if (!app.isPackaged) {
     mainWindow.webContents.openDevTools()
   } else {
-    mainWindow.loadFile(path.join(__dirname, 'dist', 'index.html'))
     mainWindow.setMenu(null)
   }
 }
