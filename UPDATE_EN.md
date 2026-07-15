@@ -7,6 +7,7 @@
 ### ✨ New Features
 
 - **📥 Auto Model Download** — First launch pops a download dialog. Backend `git clone`s from ModelScope, frontend polls every 500ms. Disclaimer ready: "ModelScope is special — no resume support 🙏"
+- **📜 Startup Disclaimer** — Pops terms of use on every launch. Disagree = instant kill, clean exit
 - **🗑️ Custom Speaker Delete Confirmation** — No more accidental deletions. Popconfirm asks "you sure?" before yeeting
 - **🎯 Default Emotion Auto-Select** — Picking a character now auto-selects the first emotion. One less click
 - **🎭 Sassy Loading Messages** — "Voice actor is on the way 🏃" / "Sound engineer is twisting knobs 🎛️" / "Emotion module is loading drama queen mode 🎭"

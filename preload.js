@@ -18,4 +18,5 @@ contextBridge.exposeInMainWorld('electronAPI', {
   startModelDownload: (modelKey) => ipcRenderer.invoke('start-model-download', modelKey),
   getDownloadStatus: (modelKey) => ipcRenderer.invoke('get-download-status', modelKey),
   getStartupModel: () => ipcRenderer.invoke('get-startup-model'),
+  quitApp: () => ipcRenderer.invoke('quit-app'),
 })

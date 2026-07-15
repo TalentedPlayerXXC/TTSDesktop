@@ -288,6 +288,13 @@ let _startupModel = null
 
 ipcMain.handle('get-startup-model', () => _startupModel)
 
+// 用户不同意免责声明 → 直接秒杀所有子进程并退出
+ipcMain.handle('quit-app', () => {
+  if (serverProcess) killProcessTree(serverProcess.pid, 'SIGKILL')
+  if (mongoWorker) killProcessTree(mongoWorker.pid, 'SIGKILL')
+  app.exit(0)
+})
+
 // 暴露后端端口给渲染进程
 ipcMain.handle('get-server-port', () => ACTUAL_PORT)
 

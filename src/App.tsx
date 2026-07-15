@@ -6,6 +6,7 @@ import Mascot from './components/Mascot';
 import SidebarMenu from './components/SidebarMenu';
 import CyberpunkLoading from './components/CyberpunkLoading';
 import ModelDownload from './components/ModelDownload';
+import DisclaimerModal from './components/DisclaimerModal';
 import ErrorBoundary from './components/ErrorBoundary';
 import { SettingsProvider, useSettings } from './services/SettingsContext';
 import { ensureModelLoaded, loadModel, setCurrentModel } from './services/index';
@@ -44,6 +45,7 @@ function AppContent() {
   const { settings } = useSettings();
 
   const [modelLoading, setModelLoading] = useState(false);
+  const [disclaimerAgreed, setDisclaimerAgreed] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('');
   const [loadingModelName, setLoadingModelName] = useState('');
 
@@ -117,6 +119,7 @@ function AppContent() {
   return (
     <ConfigProvider theme={{ algorithm: isDark ? darkAlgorithm : defaultAlgorithm }}>
       <div className='app'>
+        {!disclaimerAgreed && <DisclaimerModal onAgree={() => setDisclaimerAgreed(true)} />}
         <ModelDownload onComplete={handleModelLoad} />
         <LoginComp />
         <SidebarMenu
