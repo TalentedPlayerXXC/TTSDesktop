@@ -18,5 +18,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   startModelDownload: (modelKey) => ipcRenderer.invoke('start-model-download', modelKey),
   getDownloadStatus: (modelKey) => ipcRenderer.invoke('get-download-status', modelKey),
   getStartupModel: () => ipcRenderer.invoke('get-startup-model'),
+  getStoragePaths: () => ipcRenderer.invoke('get-storage-paths'),
+  deleteModelFiles: () => ipcRenderer.invoke('delete-model-files'),
   quitApp: () => ipcRenderer.invoke('quit-app'),
+  onBackendLog: (callback) => {
+    const handler = (_event, data) => callback(data)
+    ipcRenderer.on('backend-log', handler)
+    return () => ipcRenderer.removeListener('backend-log', handler)
+  },
 })

@@ -2,6 +2,28 @@
 
 # 更新日志
 
+## 2026-07-16
+
+### ✨ 新功能
+
+- **📂 存储位置展示** — 偏好设置新增存储信息卡片，显示模型文件和应用数据路径，一目了然
+- **🗑️ 删除模型文件** — 偏好设置支持一键删除模型，三重路径校验防误删，测试中功能会提示风险
+
+### 🔧 功能重构
+
+- **双版本打包** — `electron-builder.yml` / `electron-builder.online.yml`，离线版含模型（~4GB），在线版启动时下载（~750MB），`artifactName` 区分文件名
+- **在线版模型路径** — 打包后模型下到 `~/Library/Application Support/huisheng/models/`，Bundle 内有模型则直接读（离线版兼容）
+- **后端日志转发到渲染进程** — 新增 `backend-log` IPC + `onBackendLog` preload 桥，配网问题一眼定位
+
+### 🐛 顺手修了点东西
+
+- **退出不再报 Object destroyed** — 后端日志转发加了 try-catch，窗口销毁后不炸了
+- **菜单栏打包后隐藏** — `Menu.setApplicationMenu(null)` 替代 `mainWindow.setMenu(null)`，macOS 全局生效
+- **拖拽上传加文件魔数校验** — 不只查后缀名，读文件头验证真身（RIFF/ID3/fLaC/OggS/ftyp），恶意文件绕不过去了
+- **DevTools 改用 app.isPackaged** — 去掉 `NODE_ENV` 判断，打包后自动关 DevTools，更安全
+
+---
+
 ## 2026-07-15
 
 ### ✨ 新功能
@@ -25,8 +47,6 @@
 - **模型初始化不硬加载** — 启动时先查 `/models-info`，文件不存在就跳过，不报一脸 FileNotFoundError 再让用户看
 - **主进程预载 = 渲染进程知道** — 新增 IPC `get-startup-model`，渲染进程启动时同步，`_currentModel` 不落空
 - **Popconfirm 代替 Modal.confirm** — 轻量确认，不弹弹窗不挡视线
-- **DevTools 改用 app.isPackaged** — 去掉 `NODE_ENV` 判断，打包后自动关 DevTools，更安全
-- **拖拽上传加文件魔数校验** — 不只查后缀名，读文件头验证真身（RIFF/ID3/fLaC/OggS/ftyp），恶意文件绕不过去了
 
 ---
 

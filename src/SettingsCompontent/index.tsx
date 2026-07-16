@@ -8,6 +8,7 @@ import {
   CompressOutlined,
   SoundOutlined,
   UserOutlined,
+  FolderOpenOutlined,
 } from '@ant-design/icons'
 import IconSettings from '../components/IconSettings'
 import { useSettings } from '../services/SettingsContext'
@@ -23,6 +24,7 @@ const SettingsCompontent = () => {
   const [cache, setCache] = useState<CacheStatusResponse | null>(null)
   const [cacheLoading, setCacheLoading] = useState(false)
   const [cleaning, setCleaning] = useState(false)
+  const [storagePaths, setStoragePaths] = useState<{ modelsDir: string; userData: string } | null>(null)
   const [confirmModal, setConfirmModal] = useState<{
     open: boolean
     mode: 'all' | 'older_than' | 'by_size'
@@ -51,6 +53,8 @@ const SettingsCompontent = () => {
 
   useEffect(() => {
     loadCache()
+    // 获取存储路径
+    ;(window as any).electronAPI?.getStoragePaths?.().then(setStoragePaths)
   }, [])
 
   const handleCleanup = async (mode: 'all' | 'older_than' | 'by_size') => {
@@ -169,6 +173,73 @@ const SettingsCompontent = () => {
             </div>
           )}
         </Card>
+
+        {storagePaths && (
+          <Card className='settings-card' title={<><FolderOpenOutlined /> 存储位置</>}>
+            <div style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 2 }}>
+              <div>
+                <span style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>📦 模型文件</span>
+                <div style={{ fontFamily: 'monospace', fontSize: 11, color: '#888', wordBreak: 'break-all' }}>
+                  {storagePaths.modelsDir}
+                </div>
+              </div>
+              <div style={{ marginTop: 8 }}>
+                <span style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>🗄️ 应用数据</span>
+                <div style={{ fontFamily: 'monospace', fontSize: 11, color: '#888', wordBreak: 'break-all' }}>
+                  {storagePaths.userData}
+                </div>
+              </div>
+              <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Button
+                  size='small'
+                  danger
+                  icon={<DeleteOutlined />}
+                  onClick={() => {
+                    Modal.confirm({
+                      title: '⚠️ 确认删除模型文件？',
+                      icon: null,
+                      content: (
+                        <div style={{ fontSize: 13, lineHeight: 1.8 }}>
+                          <p style={{ color: '#fca5a5', marginBottom: 8 }}>
+                            将删除以下目录中的所有模型文件：
+                          </p>
+                          <code style={{ fontSize: 11, wordBreak: 'break-all', background: 'rgba(0,0,0,0.1)', padding: '4px 8px', borderRadius: 4, display: 'block' }}>
+                            {storagePaths.modelsDir}
+                          </code>
+                          <div style={{ marginTop: 12, padding: '8px 12px', background: 'rgba(251, 191, 36, 0.1)', borderRadius: 6, border: '1px solid rgba(251, 191, 36, 0.3)' }}>
+                            <p style={{ color: '#fbbf24', fontWeight: 500, marginBottom: 4 }}>⚠️ 此功能仍在测试中，操作前请确认</p>
+                            <p style={{ color: '#fbbf24', fontSize: 12, margin: 0 }}>
+                              建议复制上方路径，询问 AI 或自行确认后手动删除。
+                            </p>
+                          </div>
+                          <p style={{ color: '#9ca3af', marginTop: 8 }}>
+                            仅删除模型文件。音频缓存和角色数据随应用删除自动清理，无需额外操作。
+                          </p>
+                        </div>
+                      ),
+                      okText: '确认删除',
+                      okType: 'danger',
+                      cancelText: '取消',
+                      onOk: async () => {
+                        const res = await (window as any).electronAPI?.deleteModelFiles?.()
+                        if (res?.success) {
+                          message.success('模型文件已删除')
+                        } else {
+                          message.error(res?.error || '删除失败')
+                        }
+                      },
+                    })
+                  }}
+                >
+                  删除模型文件
+                </Button>
+                <span style={{ fontSize: 11, color: '#888' }}>
+                  卸载后如需清理残留数据，请手动删除上方文件夹。
+                </span>
+              </div>
+            </div>
+          </Card>
+        )}
 
         <Card className='settings-card' title={<><UserOutlined /> 自定义配音员</>}>
           {customSpeakers.length === 0 ? (

@@ -8,6 +8,8 @@
     "build": "vite build",
     "start": "electron .",
     "preview": "vite build && electron .",
+    "pack:offline": "vite build && electron-builder",
+    "pack:online": "vite build && electron-builder --config electron-builder.online.yml",
     "pack:mac": "vite build && electron-builder --mac --dir && codesign --force --deep --sign - release/mac-arm64/绘声.app && electron-builder --mac --prepackaged release/mac-arm64/绘声.app && cp 使用说明.md user-guide.md 修复.command release/",
     "pack:win": "vite build && electron-builder --win --x64",
     "pack:linux": "vite build && electron-builder --linux",
@@ -30,54 +32,5 @@
     "electron": "^42.4.1",
     "electron-builder": "^26.15.3",
     "vite": "^6.0.0"
-  },
-  "build": {
-    "appId": "com.tts.desktop",
-    "productName": "绘声",
-    "directories": {
-      "output": "release"
-    },
-    "files": [
-      "dist/**/*",
-      "main.js",
-      "preload.js",
-      "mongo-worker.js",
-      "db.js",
-      "db.example.js",
-      "package.json"
-    ],
-    "extraResources": [
-      {
-        "from": "src/data/characters.json",
-        "to": "characters.json"
-      },
-      {
-        "from": "tts_serve_mlx",
-        "to": "tts_serve_mlx"
-      },
-      {
-        "from": "characters",
-        "to": "characters"
-      }
-    ],
-    "asar": true,
-    "asarUnpack": [
-      "preload.js",
-      "mongo-worker.js",
-      "db.js"
-    ],
-    "mac": {
-      "icon": "build/icon.png",
-      "target": "dmg",
-      "category": "public.app-category.utilities"
-    },
-    "win": {
-      "icon": "build/icon.png",
-      "target": "nsis"
-    },
-    "linux": {
-      "icon": "build/icon.png",
-      "target": "AppImage"
-    }
   }
 }

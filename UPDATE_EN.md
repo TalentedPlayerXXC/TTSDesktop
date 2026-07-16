@@ -2,6 +2,28 @@
 
 # Changelog
 
+## 2026-07-16
+
+### ✨ New Features
+
+- **📂 Storage Info Card** — Settings now shows model and app data paths at a glance
+- **🗑️ Delete Model Files** — One-click model deletion in Settings with triple path validation. Testing-phase feature with risk warning
+
+### 🔧 Refactors
+
+- **Dual Build Config** — `electron-builder.yml` (offline ~4GB with models) / `electron-builder.online.yml` (online ~750MB, downloads on launch). Distinct `artifactName` prevents overwrites
+- **Online Model Path** — Models go to `~/Library/Application Support/huisheng/models/`. Falls back to bundle path when present (offline compat)
+- **Backend Logs Forwarded to Renderer** — New `backend-log` IPC + `onBackendLog` preload bridge for easier network debugging
+
+### 🐛 Squashed Some Bugs
+
+- **No more "Object destroyed" on quit** — try-catch wrapped webContents.send in backend log forwarding
+- **Menu bar hidden when packaged** — `Menu.setApplicationMenu(null)` replaces `mainWindow.setMenu(null)` for global macOS effect
+- **Drag & drop magic byte validation** — Checks RIFF/ID3/fLaC/OggS/ftyp headers instead of trusting file extensions
+- **DevTools uses app.isPackaged** — Removed NODE_ENV dependency. DevTools auto-close when packaged
+
+---
+
 ## 2026-07-15
 
 ### ✨ New Features
@@ -25,8 +47,6 @@
 - **No forced load on startup** — Checks `/models-info` first. If files are missing, skips loading instead of throwing FileNotFoundError
 - **Preload sync** — New IPC `get-startup-model` so the renderer knows what main process loaded. `_currentModel` stays in sync
 - **Popconfirm over Modal.confirm** — Lighter confirmations. No heavy modal dialog for a simple "are you sure?"
-- **DevTools uses app.isPackaged** — Replaced NODE_ENV check. DevTools auto-closes when packaged, safer
-- **Drag & drop magic byte validation** — No more trusting file extensions. Checks RIFF/ID3/fLaC/OggS/ftyp headers, malicious files can't slip through
 
 ---
 

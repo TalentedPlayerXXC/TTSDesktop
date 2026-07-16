@@ -1,0 +1,38 @@
+appId: "com.tts.desktop"
+productName: "绘声"
+artifactName: "绘声-1.1.0-在线版-${arch}.${ext}"
+directories:
+  output: "release/在线版"
+files:
+  - "dist/**/*"
+  - "main.js"
+  - "preload.js"
+  - "mongo-worker.js"
+  - "db.js"
+  - "db.example.js"
+  - "package.json"
+extraResources:
+  - from: "src/data/characters.json"
+    to: "characters.json"
+  - from: "tts_serve_mlx"
+    to: "tts_serve_mlx"
+    filter:
+      - "**/*"
+      - "!models/**"
+  - from: "characters"
+    to: "characters"
+asar: true
+asarUnpack:
+  - "preload.js"
+  - "mongo-worker.js"
+  - "db.js"
+mac:
+  icon: "build/icon.png"
+  target: "dmg"
+  category: "public.app-category.utilities"
+win:
+  icon: "build/icon.png"
+  target: "nsis"
+linux:
+  icon: "build/icon.png"
+  target: "AppImage"

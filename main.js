@@ -36,8 +36,11 @@ const serverDir = app.isPackaged
   ? path.join(process.resourcesPath, 'tts_serve_mlx')
   : path.join(__dirname, 'tts_serve_mlx')
 
+// 模型目录——在 startServer() 中按需计算（此时 app 已 ready）
+let modelsDir = ''
+
 const serverExe = path.join(serverDir, 'tts_serve_mlx')
-const modelsDir = path.join(serverDir, 'models')
+const bundledModels = path.join(serverDir, 'models')
 
 function httpGet(url) {
   return new Promise((resolve) => {
@@ -106,10 +109,26 @@ async function startServer() {
   ACTUAL_PORT = port
   console.log('[TTS] 使用端口:', port)
 
+  // 模型目录：bundle 内有模型直接用（离线版），否则用 userData（在线版可写）
+  modelsDir = fs.existsSync(bundledModels)
+    ? bundledModels
+    : path.join(app.getPath('userData'), 'models')
+
+  // 确保 modelsDir 存在（在线版可能还没有这个目录）
+  if (!fs.existsSync(modelsDir)) {
+    fs.mkdirSync(modelsDir, { recursive: true })
+  }
+
+  // 在线版（无 bundled models）时 cwd 改为 userData，确保后端可写
+  // 同时确保 userData 目录已存在
+  const serverCwd = (app.isPackaged && !fs.existsSync(bundledModels))
+    ? app.getPath('userData')
+    : serverDir
+
   console.log('[TTS] 启动服务:', serverExe)
 
   serverProcess = spawn(serverExe, [], {
-    cwd: serverDir,
+    cwd: serverCwd,
     env: {
       ...process.env,
       TTS_SERVE_PORT: String(port),
@@ -121,10 +140,14 @@ async function startServer() {
   })
 
   serverProcess.stdout.on('data', (data) => {
-    console.log(`[TTS:out] ${data.toString().trim()}`)
+    const text = data.toString().trim()
+    console.log(`[TTS:stdout] ${text}`)
+    try { mainWindow?.webContents?.send('backend-log', { level: 'stdout', text }) } catch {}
   })
   serverProcess.stderr.on('data', (data) => {
-    console.log(`[TTS:err] ${data.toString().trim()}`)
+    const text = data.toString().trim()
+    console.log(`[TTS:stderr] ${text}`)
+    try { mainWindow?.webContents?.send('backend-log', { level: 'stderr', text }) } catch {}
   })
   serverProcess.on('error', (err) => {
     console.error('[TTS] 进程错误:', err.message)
@@ -217,7 +240,7 @@ function createWindow() {
   if (!app.isPackaged) {
     mainWindow.webContents.openDevTools()
   } else {
-    mainWindow.setMenu(null)
+    Menu.setApplicationMenu(null)
   }
 }
 
@@ -294,6 +317,46 @@ ipcMain.handle('quit-app', () => {
 
 // 暴露后端端口给渲染进程
 ipcMain.handle('get-server-port', () => ACTUAL_PORT)
+
+// 暴露存储路径给渲染进程
+ipcMain.handle('get-storage-paths', () => ({
+  modelsDir: modelsDir || path.join(app.getPath('userData'), 'models'),
+  userData: app.getPath('userData'),
+}))
+
+// 删除模型文件（带三重安全校验）
+ipcMain.handle('delete-model-files', async () => {
+  const target = modelsDir || path.join(app.getPath('userData'), 'models')
+
+  // 安全校验 1：路径必须存在
+  if (!fs.existsSync(target)) {
+    return { success: false, error: '模型目录不存在' }
+  }
+
+  // 安全校验 2：路径必须包含 huisheng（防止删错目录）
+  if (!target.includes('huisheng')) {
+    console.error('[TTS] 拦截危险删除操作:', target)
+    return { success: false, error: '路径校验失败，操作已拦截' }
+  }
+
+  // 安全校验 3：只删 models/ 子目录内的内容，不删父目录
+  const stat = fs.statSync(target)
+  if (!stat.isDirectory()) {
+    return { success: false, error: '目标不是目录' }
+  }
+
+  try {
+    // 递归删除 models/ 目录下的所有内容
+    fs.rmSync(target, { recursive: true, force: true })
+    // 重建空目录
+    fs.mkdirSync(target, { recursive: true })
+    console.log('[TTS] 模型文件已删除:', target)
+    return { success: true }
+  } catch (e) {
+    console.error('[TTS] 删除模型文件失败:', e.message)
+    return { success: false, error: e.message }
+  }
+})
 
 ipcMain.handle('get-characters-local', async () => {
   try {

@@ -75,6 +75,11 @@ function AppContent() {
     ;(window as any).electronAPI?.getStartupModel?.().then((model: string | null) => {
       if (model === 'tts') setCurrentModel('tts')
     })
+    // 后端日志转发到渲染进程控制台
+    const cleanup = (window as any).electronAPI?.onBackendLog?.((data: { level: string; text: string }) => {
+      console.log(`[后端${data.level === 'stderr' ? ' ❌' : ''}] ${data.text}`)
+    })
+    return () => cleanup?.()
   }, [])
 
   const selectedKey = items.some((item) => item.key === pathname)
