@@ -9,8 +9,8 @@ import ModelDownload from './components/ModelDownload';
 import DisclaimerModal from './components/DisclaimerModal';
 import ErrorBoundary from './components/ErrorBoundary';
 import { SettingsProvider, useSettings } from './services/SettingsContext';
-import { ensureModelLoaded, loadModel, setCurrentModel } from './services/index';
-import { updateServerPort } from './services/request';
+import { ensureModelLoaded, loadModel, setCurrentModel } from './services/index'
+import { updateServerPort, getServerPortValue } from './services/request'
 import './App.css';
 import Routers from './routes';
 
@@ -49,6 +49,18 @@ function AppContent() {
   const [loadingMessage, setLoadingMessage] = useState('');
   const [loadingModelName, setLoadingModelName] = useState('');
 
+  // MLX 模型预热：发个 dummy 推理触发计算图编译，避免用户第一次合成时卡顿
+  async function warmupModel() {
+    try {
+      const port = getServerPortValue()
+      await fetch(`http://localhost:${port}/clone`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: '', ref_audio: '' }),
+      })
+    } catch { /* 预热失败不影响功能 */ }
+  }
+
   const handleModelLoad = async () => {
     setModelLoading(true)
     setLoadingMessage('🏃 配音员正在赶来的路上...')
@@ -57,6 +69,8 @@ function AppContent() {
       const res = await loadModel({ model: 'tts' })
       if (res.data?.success) {
         setCurrentModel('tts')
+        // 后台预热：发个空推理让 MLX 编译计算图，免得用户第一次合成时卡
+        warmupModel().catch(() => {})
       }
     } catch {}
     setModelLoading(false)
@@ -72,11 +86,11 @@ function AppContent() {
   useEffect(() => {
     updateServerPort()
     // 同步主进程预载的模型
-    ;(window as any).electronAPI?.getStartupModel?.().then((model: string | null) => {
+    ;window.electronAPI?.getStartupModel?.().then((model: string | null) => {
       if (model === 'tts') setCurrentModel('tts')
     })
     // 后端日志转发到渲染进程控制台
-    const cleanup = (window as any).electronAPI?.onBackendLog?.((data: { level: string; text: string }) => {
+    const cleanup = window.electronAPI?.onBackendLog?.((data: { level: string; text: string }) => {
       console.log(`[后端${data.level === 'stderr' ? ' ❌' : ''}] ${data.text}`)
     })
     return () => cleanup?.()

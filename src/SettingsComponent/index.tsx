@@ -17,7 +17,7 @@ import { loadCustomSpeakers, deleteCustomSpeaker } from '../services/customSpeak
 import type { CacheStatusResponse } from '../services/types'
 import './index.css'
 
-const SettingsCompontent = () => {
+const SettingsComponent = () => {
   const { settings, updateSettings, resetSettings } = useSettings()
   const [messageApi, contextHolder] = message.useMessage()
 
@@ -54,7 +54,7 @@ const SettingsCompontent = () => {
   useEffect(() => {
     loadCache()
     // 获取存储路径
-    ;(window as any).electronAPI?.getStoragePaths?.().then(setStoragePaths)
+    ;window.electronAPI?.getStoragePaths?.().then(setStoragePaths)
   }, [])
 
   const handleCleanup = async (mode: 'all' | 'older_than' | 'by_size') => {
@@ -207,10 +207,7 @@ const SettingsCompontent = () => {
                             {storagePaths.modelsDir}
                           </code>
                           <div style={{ marginTop: 12, padding: '8px 12px', background: 'rgba(251, 191, 36, 0.1)', borderRadius: 6, border: '1px solid rgba(251, 191, 36, 0.3)' }}>
-                            <p style={{ color: '#fbbf24', fontWeight: 500, marginBottom: 4 }}>⚠️ 此功能仍在测试中，操作前请确认</p>
-                            <p style={{ color: '#fbbf24', fontSize: 12, margin: 0 }}>
-                              建议复制上方路径，询问 AI 或自行确认后手动删除。
-                            </p>
+                            <p style={{ color: '#fbbf24', fontWeight: 500, marginBottom: 4 }}>删除后将无法恢复，请确认</p>
                           </div>
                           <p style={{ color: '#9ca3af', marginTop: 8 }}>
                             仅删除模型文件。音频缓存和角色数据随应用删除自动清理，无需额外操作。
@@ -221,7 +218,7 @@ const SettingsCompontent = () => {
                       okType: 'danger',
                       cancelText: '取消',
                       onOk: async () => {
-                        const res = await (window as any).electronAPI?.deleteModelFiles?.()
+                        const res = await window.electronAPI?.deleteModelFiles?.()
                         if (res?.success) {
                           message.success('模型文件已删除')
                         } else {
@@ -341,4 +338,4 @@ const SettingsCompontent = () => {
   )
 }
 
-export default SettingsCompontent
+export default SettingsComponent

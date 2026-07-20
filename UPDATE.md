@@ -2,6 +2,37 @@
 
 # 更新日志
 
+## 2026-07-20
+
+### 🔧 功能重构
+
+- **动态端口交给后端自己管** — 后端启动时自己找空闲端口，打印 `TTS_SERVER_PORT=xxxx` 到 stdout，Electron 主进程解析一下就完事。删掉 `findFreePort()` 和 `net` 依赖，前后端端口彻底解耦 🎯
+- **fetch 版也同步了动态端口** — `fetch_request.tsx` 补了 `updateServerPort()` + `getServerPortValue()`，跟 Axios 版保持一致。留着当个备胎，哪天 Axios 供应链出事了随时切 🛞
+
+### 🧹 代码清理
+
+- **SettingsCompontent → SettingsComponent** — 文件夹名、组件名、import 全线修正，处女座舒适了 ✅
+- **消灭 `(window as any).electronAPI`** — 7 处全部换成正经类型调用，`vite-env.d.ts` 补全了全部 preload IPC 类型定义
+- **统一 `isElectron` 检测** — 3 个 service 文件全改成 `window.electronAPI !== undefined`，不再靠 userAgent 字符串猜
+- **删除死代码** — `AudioRecorder/` 空壳、`util.tsx` 无人引用的 `base64ToBlob`，一起扫走 🧹
+- **electron-builder 补 `node_modules`** — 两个 yml 都加了，打包依赖不会漏
+
+### 🐛 顺手修了点东西
+
+- **`Menu` 终于真导入了** — `main.js` 之前忘了从 electron 里解构 `Menu`，打包后菜单栏根本没隐藏。现在好了 👌
+- **拼写修正** — `unloadTTTModel` → `unloadTTSModel`、`loadTTTModel` → `loadTTSModel`，三 T 变两 T
+- **入口文件引用修正** — `index.html` 的 `main.jsx` → `main.tsx`，终于跟实际文件名一致了
+- **删除模型按钮去掉「测试中」标签** — 三重校验都写好了，正经功能不装孙子了 💪
+- **SoundWorkshop 合成完释放 AudioContext** — `ctx.close()` 补上，不占着茅坑不那啥
+
+### 🐞 Squashed Some Bugs
+
+- **精简版模型预热** — 下载完模型后后台偷偷跑一次推理，触发 MLX 编译计算图，精简版第一次合成不再卡顿 🔥
+- **应用关闭杀不干净** — `stopServer()` 和 `will-quit` 全改成递归杀进程树 + `pkill` 兜底。不管你关窗口还是 Cmd+Q，子子孙孙一个不留 🗡️
+- **`execSync` 作用域修了** — 从文件中间移到顶部，`stopServer` 里也能用 `pkill` 了
+
+---
+
 ## 2026-07-16
 
 ### ✨ 新功能

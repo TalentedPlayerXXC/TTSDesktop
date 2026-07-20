@@ -255,6 +255,7 @@ function SoundWorkshop() {
       // --- 启动音源并渲染 ---
       source.start(0)
       const renderedBuffer = await ctx.startRendering()
+      ctx.close().catch(() => {}) // 释放 AudioContext 资源
 
       console.log(
         '[export] native render OK —',

@@ -23,9 +23,9 @@ interface MongoResult {
   data?: any[]
 }
 
-export interface ElectronAPI {
-  selectAudio: () => Promise<any>
-  getCharactersLocal: () => Promise<{ status: string; data?: any[]; error?: string }>
+interface ElectronAPI {
+  selectAudio: () => Promise<{ filePath: string; fileName: string } | null>
+  getCharactersLocal: () => Promise<{ status: string; data?: any[]; tags?: any[]; error?: string }>
   getServerPort: () => Promise<number | null>
   getCharacterPreviewAudio: (params: { game: string; name: string }) => Promise<{ status: string; data?: string; error?: string }>
   getCharacterEmotions: (params: { game: string; name: string }) => Promise<{ status: string; data?: string[]; error?: string }>
@@ -33,6 +33,13 @@ export interface ElectronAPI {
   migrateCustomSpeaker: (params: { sourceFilename: string; name: string; gender: string; voiceType: string; temperament: string }) => Promise<any>
   deleteCustomSpeaker: (params: { name: string }) => Promise<any>
   recoverCustomSpeakers: () => Promise<{ status: string; data?: any[] }>
+  startModelDownload: (modelKey: string) => Promise<any>
+  getDownloadStatus: (modelKey: string) => Promise<any>
+  getStartupModel: () => Promise<string | null>
+  getStoragePaths: () => Promise<{ modelsDir: string; userData: string }>
+  deleteModelFiles: () => Promise<{ success: boolean; error?: string }>
+  quitApp: () => Promise<void>
+  onBackendLog: (callback: (data: { level: string; text: string }) => void) => () => void
   mongo: {
     connect: () => Promise<any>
     getCharacters: () => Promise<any>

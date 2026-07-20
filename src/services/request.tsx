@@ -2,7 +2,7 @@
 import axios from 'axios';
 
 // 判断是否是 Electron 环境
-const isElectron = navigator.userAgent.toLowerCase().includes('electron');
+const isElectron = typeof window !== 'undefined' && window.electronAPI !== undefined
 
 // 动态端口
 let serverPort = 8000

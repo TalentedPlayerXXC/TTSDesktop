@@ -42,3 +42,4 @@ characters/*
 # MongoDB connection config (contains DB URI, do not commit)
 db.js
 models/
+CODE_REVIEW_*.md

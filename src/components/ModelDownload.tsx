@@ -23,7 +23,7 @@ export default function ModelDownload({ onComplete }: { onComplete: () => void }
   useEffect(() => {
     ;(async () => {
       try {
-        const api = (window as any).electronAPI
+        const api = window.electronAPI!
         const port = await api.getServerPort()
         const res = await fetch(`http://127.0.0.1:${port}/models-info`)
         const info = await res.json()
@@ -37,7 +37,7 @@ export default function ModelDownload({ onComplete }: { onComplete: () => void }
 
   // 下载缺失的模型
   const handleDownloadAll = async () => {
-    const api = (window as any).electronAPI
+    const api = window.electronAPI!
     const missing = Object.entries(models).filter(([_, m]) => !m.downloaded)
 
     for (const [key] of missing) {

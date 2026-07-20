@@ -1,7 +1,7 @@
-const { app, BrowserWindow, shell, dialog, ipcMain } = require('electron')
+const { app, BrowserWindow, shell, dialog, ipcMain, Menu } = require('electron')
 const path = require('path')
 const fs = require('fs')
-const { spawn, fork } = require('child_process')
+const { spawn, fork, execSync } = require('child_process')
 const http = require('http')
 const https = require('https')
 
@@ -13,24 +13,6 @@ const HEALTH_CHECK_INTERVAL = 500
 let serverProcess = null
 let mainWindow = null
 let ACTUAL_PORT = null
-
-// 查找空闲端口
-const net = require('net')
-function findFreePort(start = 8000) {
-  return new Promise((resolve) => {
-    const tryPort = (port) => {
-      const server = net.createServer()
-      server.on('error', () => {
-        if (port - start < 50) tryPort(port + 1)
-        else resolve(null)
-      })
-      server.listen(port, '127.0.0.1', () => {
-        server.close(() => resolve(port))
-      })
-    }
-    tryPort(start)
-  })
-}
 
 const serverDir = app.isPackaged
   ? path.join(process.resourcesPath, 'tts_serve_mlx')
@@ -52,20 +34,19 @@ function httpGet(url) {
   })
 }
 
-async function waitForServer() {
-  const url = `http://${SERVER_HOST}:${ACTUAL_PORT}/health`
+async function waitForPortAndHealth() {
   const start = Date.now()
-
   while (Date.now() - start < STARTUP_TIMEOUT) {
-    const ok = await httpGet(url)
-    if (ok) return
+    if (ACTUAL_PORT) {
+      const ok = await httpGet(`http://${SERVER_HOST}:${ACTUAL_PORT}/health`)
+      if (ok) return
+    }
     await new Promise((r) => setTimeout(r, HEALTH_CHECK_INTERVAL))
   }
-
   throw new Error(`TTS 服务启动超时 (${STARTUP_TIMEOUT}ms)`)
 }
 
-async function unloadTTTModel() {
+async function unloadTTSModel() {
   const url = `http://${SERVER_HOST}:${ACTUAL_PORT}/model/unload`
   return new Promise((resolve) => {
     const data = JSON.stringify({ model: 'tts' })
@@ -81,9 +62,9 @@ async function unloadTTTModel() {
   })
 }
 
-async function loadTTTModel() {
+async function loadTTSModel() {
   // 先卸载当前模型再加载，防止叠模型
-  await unloadTTTModel()
+  await unloadTTSModel()
   const url = `http://${SERVER_HOST}:${ACTUAL_PORT}/model/load`
   return new Promise((resolve) => {
     const data = JSON.stringify({ model: 'tts' })
@@ -100,15 +81,6 @@ async function loadTTTModel() {
 }
 
 async function startServer() {
-  // 查找空闲端口
-  const port = await findFreePort()
-  if (!port) {
-    console.error('[TTS] 无可用端口 (8000-8050 均被占用)')
-    return
-  }
-  ACTUAL_PORT = port
-  console.log('[TTS] 使用端口:', port)
-
   // 模型目录：bundle 内有模型直接用（离线版），否则用 userData（在线版可写）
   modelsDir = fs.existsSync(bundledModels)
     ? bundledModels
@@ -127,11 +99,11 @@ async function startServer() {
 
   console.log('[TTS] 启动服务:', serverExe)
 
+  // 不传 TTS_SERVE_PORT，让后端自动找空闲端口（8000-8050）
   serverProcess = spawn(serverExe, [], {
     cwd: serverCwd,
     env: {
       ...process.env,
-      TTS_SERVE_PORT: String(port),
       TTS_SERVE_HOST: SERVER_HOST,
       TTS_SERVE_LOG_LEVEL: 'warning',
       TTS_SERVE_MODELS_DIR: modelsDir,
@@ -142,6 +114,12 @@ async function startServer() {
   serverProcess.stdout.on('data', (data) => {
     const text = data.toString().trim()
     console.log(`[TTS:stdout] ${text}`)
+    // 从 stdout 解析端口：TTS_SERVER_PORT=8031
+    const match = text.match(/^TTS_SERVER_PORT=(\d+)$/)
+    if (match) {
+      ACTUAL_PORT = parseInt(match[1], 10)
+      console.log(`[TTS] 发现动态端口: ${ACTUAL_PORT}`)
+    }
     try { mainWindow?.webContents?.send('backend-log', { level: 'stdout', text }) } catch {}
   })
   serverProcess.stderr.on('data', (data) => {
@@ -160,16 +138,18 @@ async function startServer() {
 
 function stopServer() {
   if (!serverProcess) return
+  console.log('[TTS] 正在连锅端后端服务...')
+  killProcessTree(serverProcess.pid, 'SIGKILL')
+  serverProcess = null
+  // 诛九族兜底：万一有逃出进程树的孤儿进程
+  try { execSync('pkill -f tts_serve_mlx', { timeout: 1000 }) } catch {}
+}
 
-  console.log('[TTS] 正在关闭服务...')
-  serverProcess.kill('SIGTERM')
-
-  setTimeout(() => {
-    if (serverProcess) {
-      console.log('[TTS] 强制终止')
-      serverProcess.kill('SIGKILL')
-    }
-  }, 5000)
+// MongoDB Worker——也连锅端
+function stopMongoWorker() {
+  if (!mongoWorker) return
+  killProcessTree(mongoWorker.pid, 'SIGKILL')
+  mongoWorker = null
 }
 
 // MongoDB Worker
@@ -203,18 +183,6 @@ function startMongoWorker() {
 
   // 自动连接
   mongoWorker.send({ type: 'connect', uri: MONGODB_URI })
-}
-
-function stopMongoWorker() {
-  if (!mongoWorker) return
-  // 先发断开请求，等 1s 让 MongoDB 优雅断开
-  mongoWorker.send({ type: 'disconnect' })
-  setTimeout(() => {
-    if (mongoWorker) {
-      mongoWorker.kill()
-      mongoWorker = null
-    }
-  }, 1000)
 }
 
 function createWindow() {
@@ -551,7 +519,7 @@ app.whenReady().then(async () => {
     await startServer()
     startMongoWorker()
     console.log('[TTS] 等待服务就绪...')
-    await waitForServer()
+    await waitForPortAndHealth()
     console.log('[TTS] 服务就绪')
 
     // 检查模型文件是否存在，不存在就跳过加载，交给 ModelDownload
@@ -561,7 +529,7 @@ app.whenReady().then(async () => {
       const qwen = allInfo['qwenTTS_0.6B_MLX']
       if (qwen && qwen.downloaded) {
         console.log('[TTS] 模型文件已存在，加载 Qwen3 TTS 模型...')
-        const loaded = await loadTTTModel()
+        const loaded = await loadTTSModel()
         if (!loaded) {
           console.error('[TTS] 模型加载失败，渲染进程会按需重试')
         } else {
@@ -600,7 +568,6 @@ app.on('activate', () => {
 })
 
 // 递归杀整个进程树（含 Python multiprocessing 子进程）
-const { execSync } = require('child_process')
 function killProcessTree(pid, signal = 'SIGKILL') {
   try {
     const out = execSync(`pgrep -P ${pid}`, { encoding: 'utf-8', timeout: 2000 }).trim()
@@ -611,26 +578,15 @@ function killProcessTree(pid, signal = 'SIGKILL') {
   try { process.kill(pid, signal) } catch { /* 已死 */ }
 }
 
-// 应用退出——先 SIGTERM 让 Python 进程树优雅释放资源，再递归 SIGKILL
-app.on('will-quit', (event) => {
-  event.preventDefault()
-
+// 应用退出——不管怎么退，诛九族就完事了
+app.on('will-quit', () => {
   if (serverProcess) {
-    serverProcess.kill('SIGTERM')
+    killProcessTree(serverProcess.pid, 'SIGKILL')
+    try { execSync('pkill -f tts_serve_mlx', { timeout: 1000 }) } catch {}
+    serverProcess = null
   }
   if (mongoWorker) {
-    mongoWorker.kill('SIGTERM')
+    killProcessTree(mongoWorker.pid, 'SIGKILL')
+    mongoWorker = null
   }
-
-  setTimeout(() => {
-    if (serverProcess) {
-      killProcessTree(serverProcess.pid)
-      serverProcess = null
-    }
-    if (mongoWorker) {
-      mongoWorker.kill('SIGKILL')
-      mongoWorker = null
-    }
-    app.exit()
-  }, 500)
 })

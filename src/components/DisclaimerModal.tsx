@@ -5,7 +5,7 @@ export default function DisclaimerModal({ onAgree }: { onAgree: () => void }) {
 
   const handleDisagree = () => {
     setLoading(true)
-    ;(window as any).electronAPI?.quitApp?.()
+    ;window.electronAPI?.quitApp?.()
   }
 
   return (

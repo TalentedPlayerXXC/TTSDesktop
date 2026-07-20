@@ -7,7 +7,7 @@ import TTSComponentBeta from '../TTSComponentBeta';
 import TTSComponent from '../TTSComponent';
 import VoiceDesign from '../VoiceDesign';
 import SoundWorkshop from '../SoundWorkshop';
-import Settings from '../SettingsCompontent';
+import Settings from '../SettingsComponent';
 // 路由配置 
 // home
 // tts配音 

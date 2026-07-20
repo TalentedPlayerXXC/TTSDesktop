@@ -24,7 +24,7 @@ import type {
   CleanupResponse,
 } from './types'
 
-const isElectron = navigator.userAgent.toLowerCase().includes('electron')
+const isElectron = typeof window !== 'undefined' && window.electronAPI !== undefined
 
 // 获取音频输出地址
 export function getOutputUrl(audioUrl: string): string {
