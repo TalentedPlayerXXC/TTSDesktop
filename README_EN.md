@@ -47,10 +47,6 @@ npm run dev                        # Vite dev server
 NODE_ENV=development npm start     # Electron
 ```
 
-## Changelog
-
-Curious what the author broke this time? 👉 [UPDATE.md](./UPDATE.md)
-
 ## 更新日志
 
 想看中文？👉 [UPDATE.md](./UPDATE.md)
