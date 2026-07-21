@@ -19,6 +19,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getDownloadStatus: (modelKey) => ipcRenderer.invoke('get-download-status', modelKey),
   getStartupModel: () => ipcRenderer.invoke('get-startup-model'),
   getStoragePaths: () => ipcRenderer.invoke('get-storage-paths'),
+  getSystemInfo: () => ipcRenderer.invoke('get-system-info'),
   deleteModelFiles: () => ipcRenderer.invoke('delete-model-files'),
   quitApp: () => ipcRenderer.invoke('quit-app'),
   onBackendLog: (callback) => {

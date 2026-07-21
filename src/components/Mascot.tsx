@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { Modal, Input, message } from 'antd';
 import './Mascot.css';
+import FeedbackModal from '../feedback';
 
 interface Sparkle {
   x: number;
@@ -17,6 +18,7 @@ function Mascot() {
   const [bugOpen, setBugOpen] = useState(false);
   const [bugTitle, setBugTitle] = useState('');
   const [bugDesc, setBugDesc] = useState('');
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [messageApi, msgHolder] = message.useMessage();
   const [bubbleVisible, setBubbleVisible] = useState(false);
   const [bubbleClosing, setBubbleClosing] = useState(false);
@@ -299,9 +301,9 @@ function Mascot() {
   }, []);
 
   const handleBug = useCallback(() => {
-    messageApi.info('🥲 本功能因赞助商（也就是作者本人）资金链断裂暂停服务，攒够钱买服务器了一定补上！（有钱了踢我一下）');
+    setFeedbackOpen(true);
     setMenuOpen(false);
-  }, [messageApi]);
+  }, []);
 
   const handleBugSubmit = useCallback(() => {
     if (!bugTitle.trim()) {
@@ -395,6 +397,8 @@ function Mascot() {
           />
         </div>
       </Modal>
+
+      <FeedbackModal open={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
     </div>
   );
 }

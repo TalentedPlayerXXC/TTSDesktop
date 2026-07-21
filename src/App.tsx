@@ -14,6 +14,22 @@ import { updateServerPort, getServerPortValue } from './services/request'
 import './App.css';
 import Routers from './routes';
 
+// 全局日志缓存 - 放在组件外，只初始化一次
+// 使用原始控制台方法避免 Electron 包装干扰
+;(function() {
+  if ((window as any).__consoleLogs__) return // 防止重复初始化
+  const buffer: string[] = []
+  const origLog = console.log
+  console.log = function(...args: any[]) {
+    buffer.push(args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' '))
+    if (buffer.length > 300) buffer.splice(0, buffer.length - 300)
+    origLog.apply(console, args)
+  }
+  ;(window as any).__consoleLogs__ = buffer
+  // 立即写一条测试日志，验证捕获生效
+  console.log('[日志捕获已启动]')
+})()
+
 const items = [
   {
     key: '/tts',
@@ -49,7 +65,6 @@ function AppContent() {
   const [loadingMessage, setLoadingMessage] = useState('');
   const [loadingModelName, setLoadingModelName] = useState('');
 
-  // MLX 模型预热：发个 dummy 推理触发计算图编译，避免用户第一次合成时卡顿
   async function warmupModel() {
     try {
       const port = getServerPortValue()

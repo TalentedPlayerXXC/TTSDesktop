@@ -37,6 +37,7 @@ interface ElectronAPI {
   getDownloadStatus: (modelKey: string) => Promise<any>
   getStartupModel: () => Promise<string | null>
   getStoragePaths: () => Promise<{ modelsDir: string; userData: string }>
+  getSystemInfo: () => Promise<{ osVersion?: string; arch?: string; macosVersion?: string }>
   deleteModelFiles: () => Promise<{ success: boolean; error?: string }>
   quitApp: () => Promise<void>
   onBackendLog: (callback: (data: { level: string; text: string }) => void) => () => void
@@ -50,3 +51,5 @@ interface ElectronAPI {
 interface Window {
   electronAPI?: ElectronAPI
 }
+
+declare const __APP_VERSION__: string

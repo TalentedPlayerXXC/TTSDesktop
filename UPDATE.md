@@ -22,6 +22,30 @@
 
 - **情感列表数量匹配文件** — 有两个音频就列两个情感标签，不吞不合并
 
+### 💬 门将系统上线
+
+- **GitHub Issues 反馈通道** — 设置页新增「反馈与建议」卡片，内置 Token 自动提 Issue 到仓库，再也不用心累地手动去 GitHub 提了 🎫
+- **崩溃日志自动捕获** — 控制台日志自动缓存，提反馈时一并上传，排查问题有据可查
+- **Token 安全隔离** — GitHub Token 独立为 `config.ts`（已 gitignore），源码不留密钥，推上去 GitHub 不再报警 🛡️
+- **反馈入口迁移** — 从设置页移回 Mascot 小助手，点 🐛 按钮直接弹窗提交，之前那条「赞助商资金断裂」的摆烂文案终于退役了 😂
+- **macOS 真实版本** — 新增 IPC `getSystemInfo`，走主进程 `sw_vers -productVersion` 获取真实 macOS 版本，不再报 10.15
+- **日志捕获加固** — IIFE 包裹 + 防重复 + 启动自检标记，彻底解决「日志未启用」的问题
+- **App 版本注入** — Vite define 正确替换 `__APP_VERSION__`，反馈 Issue 里不再显示 `unknown`
+
+### 🎮 Steam Deck 后端服务器
+
+- **系统部署** — Ubuntu Server 24.04 LTS + Docker + MongoDB 7.0，全栈跑通
+- **安全加固** — Tailscale 组网（Mac ↔ Deck 直连）+ UFW 防火墙（仅放行局域网和 Tailscale）+ SSH 密钥登录关密码
+- **磁盘扩容** — 100G → 400G，LVM 在线扩展不用重启
+- **定时开关机** — 每晚 22:00 自动关机 + RTC 唤醒，早 8:00 自己醒，省电不操心 ⏰
+
+### 🎨 赛博质量大盘
+
+- **实时监控面板** — Vite + React 做的 Web 面板，CPU/内存/磁盘/服务状态一览无余，赛博网格背景 + 霓虹配色 + 扫描线动画
+- **反馈质量大盘** — GitHub Issues 统计、MongoDB 归档数据、待处理/已关闭一目了然
+- **自动同步** — 开机即同步，之后每 30 分钟拉一次 GitHub Issues 到 MongoDB 📡
+- **面板地址** — `http://steamdeck:5000`（Tailscale 网络下随处可访）
+
 ---
 
 ## 2026-07-20

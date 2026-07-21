@@ -294,6 +294,26 @@ ipcMain.handle('get-storage-paths', () => ({
   userData: app.getPath('userData'),
 }))
 
+// 暴露系统信息给渲染进程（macOS 版本等）
+ipcMain.handle('get-system-info', () => {
+  const info = {}
+  try {
+    const os = require('os')
+    const { execSync } = require('child_process')
+    info.osVersion = os.release()
+    info.arch = process.arch
+    // macOS 真实版本
+    if (process.platform === 'darwin') {
+      try {
+        info.macosVersion = execSync('sw_vers -productVersion', { encoding: 'utf-8', timeout: 2000 }).trim()
+      } catch {
+        info.macosVersion = os.release()
+      }
+    }
+  } catch {}
+  return info
+})
+
 // 删除模型文件（带三重安全校验）
 ipcMain.handle('delete-model-files', async () => {
   const target = modelsDir || path.join(app.getPath('userData'), 'models')

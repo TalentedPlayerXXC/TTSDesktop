@@ -2,6 +2,59 @@
 
 # Changelog
 
+## 2026-07-21
+
+### ✨ New Features
+
+- **New game: Blue Archive** — Character database expanded to 6 games, 452 characters total. `GAME_FOLDER_MAP` and `characters.json` fully synced 🎉
+- **🎭 Cyberpunk Distribution Site** — `docs/` folder hosts a GitHub Pages download page. Cyberpunk grid background, neon title, macOS offline/online packages clearly listed. Direct download URL for the latest release is copyable. Even has a favicon. All free, all GitHub 🤑
+
+### 🔧 Refactors
+
+- **Emotion regex enhanced** — New bare `【emotion】` pattern catches numbered variants like `【默认2】` / `【默认3】`. The emotion dropdown now correctly surfaces all of them 👀
+- **English artifact names** — Changed from `绘声-1.2.0-online-arm64.dmg` to `huisheng-1.2.0-online-arm64.dmg`. GitHub no longer chokes on Chinese characters in filenames
+
+### 🧹 Data Cleanup
+
+- **`【_unk_】` → `【其他】`** — 21 unclassifiable audio files batch-renamed. No more ugly `_unk_` labels, replaced with clean `【其他】` (Other)
+
+### 🐛 Squashed Some Bugs
+
+- **Emotion list counts match actual files** — Two audio files = two emotion tags. No more merging, no more hiding
+
+---
+
+## 2026-07-20
+
+### 🔧 Refactors
+
+- **Dynamic port, backend-driven** — Backend picks a free port on startup, prints `TTS_SERVER_PORT=xxxx` to stdout. Electron main process just parses it. Removed `findFreePort()` and `net` dependency. Ports fully decoupled 🎯
+- **Fetch service synced to dynamic port** — `fetch_request.tsx` now has `updateServerPort()` + `getServerPortValue()`, matching the Axios version. Kept as a fallback in case Axios supply chain ever goes sideways 🛞
+
+### 🧹 Code Cleanup
+
+- **SettingsCompontent → SettingsComponent** — Folder name, component name, imports all fixed. OCD comfort achieved ✅
+- **Wiped out `(window as any).electronAPI`** — All 7 occurrences replaced with proper typed calls. `vite-env.d.ts` fully covers all preload IPC types
+- **Unified `isElectron` detection** — All 3 service files now use `window.electronAPI !== undefined`. No more guessing from userAgent
+- **Dead code removal** — `AudioRecorder/` shell component, orphaned `base64ToBlob` in `util.tsx`, swept away 🧹
+- **electron-builder gets `node_modules`** — Both yml configs updated. Dependencies won't mysteriously vanish from the bundle
+
+### 🐛 Squashed Some Bugs
+
+- **`Menu` finally properly imported** — `main.js` forgot to destructure `Menu` from electron. Packaged builds never actually hid the menu bar. Now they do 👌
+- **Typo fixes** — `unloadTTTModel` → `unloadTTSModel`, `loadTTTModel` → `loadTTSModel`. Three Ts → two Ts
+- **Entry point fix** — `index.html` referenced `main.jsx` which didn't exist. Now points at `main.tsx`
+- **Delete Model button drops the \"testing\" label** — Triple path validation is solid. Real feature, no disclaimer needed 💪
+- **SoundWorkshop closes AudioContext after use** — `ctx.close()` finally called. Not holding the toilet hostage anymore
+
+### 🐞 Squashed Some More Bugs
+
+- **Lightweight model warmup** — After downloading, secretly runs one inference to trigger MLX JIT compilation. First synthesis on the lightweight model is no longer a slideshow 🔥
+- **App kill now actually kills everything** — `stopServer()` and `will-quit` both use recursive process tree killing + `pkill` as backup. Close window, Cmd+Q — children, grandchildren, all dead 🗡️
+- **`execSync` scope fixed** — Moved from middle of file to top so `stopServer` can actually reach the `pkill` function
+
+---
+
 ## 2026-07-16
 
 ### ✨ New Features
