@@ -1,6 +1,6 @@
 appId: "com.tts.desktop"
 productName: "绘声"
-artifactName: "huisheng-1.2.0-offline-${arch}.${ext}"
+artifactName: "huisheng-1.2.1-offline-${arch}.${ext}"
 directories:
   output: "release/offline"
 files:
