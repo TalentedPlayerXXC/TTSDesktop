@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>绘声 — TTSDesktop 下载</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<style>
+  :root {
+    --bg: #0a0a12;
+    --surface: rgba(18, 18, 40, 0.85);
+    --surface2: rgba(30, 30, 60, 0.7);
+    --border: rgba(0, 255, 255, 0.15);
+    --text: #e0e0f0;
+    --text2: #7a7aaa;
+    --neon: #00ffff;
+    --neon2: #ff00ff;
+    --font: 'SF Mono', 'JetBrains Mono', 'Cascadia Code', monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  /* ── cyberpunk background ── */
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    min-height: 100vh;
+    position: relative;
+    overflow-x: hidden;
+  }
+  body::before {
+    content: '';
+    position: fixed; inset: 0; z-index: 0;
+    background-image:
+      linear-gradient(rgba(0,255,255,.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,255,255,.04) 1px, transparent 1px);
+    background-size: 48px 48px;
+    pointer-events: none;
+  }
+  body::after {
+    content: '';
+    position: fixed; inset: 0; z-index: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent, transparent 2px,
+      rgba(0,255,255,.015) 2px, rgba(0,255,255,.015) 4px
+    );
+    pointer-events: none;
+    animation: scan 8s linear infinite;
+  }
+  @keyframes scan {
+    0%   { transform: translateY(0); }
+    100% { transform: translateY(4px); }
+  }
+  .glow-left {
+    position: fixed; left: -200px; top: 20%; z-index: 0;
+    width: 500px; height: 500px;
+    background: radial-gradient(circle, rgba(0,255,255,.06) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .glow-right {
+    position: fixed; right: -200px; bottom: 10%; z-index: 0;
+    width: 500px; height: 500px;
+    background: radial-gradient(circle, rgba(255,0,255,.06) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  /* ── header ── */
+  .hero {
+    position: relative; z-index: 1;
+    padding: 60px 24px 36px;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+  }
+  .hero h1 {
+    font-size: 48px;
+    font-weight: 700;
+    text-shadow: 0 0 20px rgba(0,255,255,.4), 0 0 60px rgba(0,255,255,.15);
+  }
+  .hero h1 .neon-cyan { color: var(--neon); }
+  .hero h1 .neon-pink { color: var(--neon2); text-shadow: 0 0 20px rgba(255,0,255,.4), 0 0 60px rgba(255,0,255,.15); }
+  .hero p { color: var(--text2); font-size: 15px; margin-top: 8px; }
+  .hero .sub { font-size: 13px; color: var(--text2); margin-top: 4px; opacity: .6; }
+
+  .container {
+    position: relative; z-index: 1;
+    max-width: 680px; margin: 0 auto; padding: 32px 20px 80px;
+  }
+
+  /* ── URL bar ── */
+  .url-bar {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin-bottom: 28px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    backdrop-filter: blur(6px);
+    transition: border-color .3s;
+  }
+  .url-bar.has-url { border-color: rgba(0,255,255,.3); }
+  .url-bar .url-label {
+    font-size: 11px;
+    color: var(--neon);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    white-space: nowrap;
+  }
+  .url-bar .url-text {
+    flex: 1;
+    font-size: 12px;
+    color: var(--text2);
+    user-select: all;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .url-bar .url-text.loaded { color: var(--text); }
+  .url-bar .copy-btn {
+    flex-shrink: 0;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text2);
+    font-size: 11px;
+    font-family: var(--font);
+    padding: 4px 10px;
+    cursor: pointer;
+    transition: all .2s;
+  }
+  .url-bar .copy-btn:hover {
+    border-color: var(--neon);
+    color: var(--neon);
+    box-shadow: 0 0 12px rgba(0,255,255,.2);
+  }
+  .url-bar .copy-btn.copied {
+    border-color: var(--neon2);
+    color: var(--neon2);
+  }
+
+  /* ── release cards ── */
+  .release {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 22px;
+    margin-bottom: 20px;
+    transition: border-color .3s, box-shadow .3s;
+    backdrop-filter: blur(6px);
+  }
+  .release:hover {
+    border-color: rgba(0,255,255,.35);
+    box-shadow: 0 0 24px rgba(0,255,255,.06);
+  }
+  .release-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 10px;
+  }
+  .release-version { font-size: 20px; font-weight: 600; }
+  .release-version .tag { color: var(--neon); }
+  .release-date { color: var(--text2); font-size: 12px; white-space: nowrap; padding-top: 4px; }
+  .release-notes {
+    color: var(--text2);
+    font-size: 13px;
+    margin-bottom: 16px;
+    line-height: 1.7;
+    max-height: 200px;
+    overflow-y: auto;
+  }
+  .release-notes p { margin-bottom: 4px; }
+  .release-notes ul { padding-left: 18px; margin-bottom: 4px; }
+  .release-notes a { color: var(--neon); }
+  .release-notes::-webkit-scrollbar { width: 4px; }
+  .release-notes::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .downloads { display: flex; gap: 10px; flex-wrap: wrap; }
+  .download-card {
+    display: flex;
+    flex-direction: column;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 18px;
+    text-decoration: none;
+    color: var(--text);
+    transition: all .25s;
+    min-width: 170px;
+    backdrop-filter: blur(4px);
+  }
+  .download-card:hover {
+    border-color: var(--neon);
+    box-shadow: 0 0 16px rgba(0,255,255,.12);
+    background: rgba(30,30,70,0.8);
+  }
+  .download-card .dl-arch { font-size: 11px; color: var(--text2); margin-bottom: 2px; }
+  .download-card .dl-title { font-size: 15px; font-weight: 500; display: flex; align-items: center; gap: 6px; }
+  .download-card .dl-title .badge {
+    font-size: 10px; padding: 1px 7px; border-radius: 4px; font-weight: 600;
+  }
+  .badge-offline { background: rgba(0,255,255,.12); color: var(--neon); }
+  .badge-online  { background: rgba(255,0,255,.12); color: var(--neon2); }
+  .download-card .dl-size { font-size: 11px; color: var(--text2); margin-top: 3px; }
+
+  .latest-badge {
+    font-size: 10px;
+    background: rgba(0,255,255,.12);
+    color: var(--neon);
+    padding: 2px 8px;
+    border-radius: 10px;
+    margin-left: 8px;
+    font-weight: 500;
+    vertical-align: middle;
+  }
+  .state-msg { text-align: center; padding: 60px 20px; color: var(--text2); }
+  .state-msg .icon { font-size: 48px; margin-bottom: 12px; }
+
+  .footer {
+    position: relative; z-index: 1;
+    text-align: center; padding: 40px 20px; color: var(--text2); font-size: 12px;
+    border-top: 1px solid var(--border);
+  }
+  .footer a { color: var(--neon); text-decoration: none; }
+  .footer a:hover { text-decoration: underline; }
+
+  @media (max-width: 600px) {
+    .hero h1 { font-size: 30px; }
+    .release-header { flex-direction: column; }
+    .downloads { flex-direction: column; }
+    .download-card { min-width: auto; }
+    .url-bar { flex-wrap: wrap; }
+  }
+</style>
+</head>
+<body>
+
+<div class="glow-left"></div>
+<div class="glow-right"></div>
+
+<div class="hero">
+  <h1><span class="neon-cyan">绘</span><span class="neon-pink">声</span> · TTSDesktop</h1>
+  <p>让文字会说话，让声音有灵魂</p>
+  <div class="sub">macOS · 基于 GPT-SoVITS + MLX · Apple Silicon &amp; Intel</div>
+</div>
+
+<div class="container">
+  <div class="url-bar" id="urlBar">
+    <span class="url-label">📦 最新包地址</span>
+    <span class="url-text" id="urlText">加载中…</span>
+    <button class="copy-btn" id="copyBtn" onclick="copyUrl()">复制</button>
+  </div>
+
+  <div id="releases"><div class="state-msg"><div class="icon">⏳</div><p>正在加载发布版本…</p></div></div>
+</div>
+
+<div class="footer">
+  <p><a href="https://github.com/TalentedPlayerXXC/TTSDesktop" target="_blank">GitHub 仓库</a> · 基于 GitHub Releases 自动分发</p>
+</div>
+
+<script>
+const REPO = 'TalentedPlayerXXC/TTSDesktop'
+const API = `https://api.github.com/repos/${REPO}/releases`
+
+function classifyAsset(name) {
+  const n = name.toLowerCase()
+  if (n.includes('offline')) return 'offline'
+  if (n.includes('online'))  return 'online'
+  return ''
+}
+function archOf(name) {
+  const n = name.toLowerCase()
+  if (n.includes('arm64') || n.includes('aarch64')) return 'Apple 芯片'
+  if (n.includes('x64') || n.includes('x86_64')) return 'Intel 芯片'
+  return ''
+}
+function formatSize(bytes) {
+  if (!bytes) return ''
+  return (bytes / 1024 / 1024).toFixed(1) + ' MB'
+}
+function formatDate(iso) {
+  return new Date(iso).toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' })
+}
+
+// ── copy handler ──
+function copyUrl() {
+  const text = document.getElementById('urlText').textContent
+  if (!text || text === '加载中…' || text === '暂无') return
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('copyBtn')
+    btn.textContent = '已复制 ✓'
+    btn.classList.add('copied')
+    setTimeout(() => { btn.textContent = '复制'; btn.classList.remove('copied') }, 2000)
+  }).catch(() => {
+    const ta = document.createElement('textarea')
+    ta.value = text
+    document.body.appendChild(ta)
+    ta.select()
+    document.execCommand('copy')
+    ta.remove()
+  })
+}
+
+// ── update URL bar with latest DMG ──
+function updateUrlBar(releases) {
+  const urlText = document.getElementById('urlText')
+  const urlBar = document.getElementById('urlBar')
+  const published = releases.filter(r => !r.draft && r.published_at)
+  if (published.length === 0) {
+    urlText.textContent = '暂无'
+    return
+  }
+  const latest = published[0]
+  const dmgs = (latest.assets || []).filter(a => a.name.toLowerCase().endsWith('.dmg'))
+  if (dmgs.length > 0) {
+    // show the first DMG URL (the one the user sees first in the card)
+    urlText.textContent = dmgs[0].browser_download_url
+    urlText.classList.add('loaded')
+    urlBar.classList.add('has-url')
+  } else {
+    urlText.textContent = `https://github.com/${REPO}/releases/tag/${latest.tag_name}`
+    urlText.classList.add('loaded')
+  }
+}
+
+// ── render releases ──
+function renderReleases(releases) {
+  const el = document.getElementById('releases')
+  const published = releases.filter(r => !r.draft && r.published_at)
+  updateUrlBar(releases)
+
+  if (published.length === 0) {
+    el.innerHTML = '<div class="state-msg"><div class="icon">📦</div><p>还没有发布版本，敬请期待</p></div>'
+    return
+  }
+
+  const html = published.map((rel, idx) => {
+    const isLatest = idx === 0
+    const assets = (rel.assets || []).filter(a => a.name.toLowerCase().endsWith('.dmg'))
+    if (assets.length === 0) return ''
+
+    const notes = rel.body || '(无发布说明)'
+    const notesHtml = notes
+      .replace(/\n{2,}/g, '\n')
+      .split('\n').map(l => l.trim() ? `<p>${l.replace(/`([^`]+)`/g, '<code>$1</code>')}</p>` : '').join('')
+
+    const cards = assets.map(a => {
+      const type = classifyAsset(a.name)
+      const arch = archOf(a.name)
+      const size = formatSize(a.size)
+      const label = type === 'offline' ? '离线版' : '在线版'
+      const badgeCls = type === 'offline' ? 'badge-offline' : 'badge-online'
+      return `<a class="download-card" href="${a.browser_download_url}">
+        <div class="dl-arch">${arch || 'macOS'}</div>
+        <div class="dl-title">
+          ${label}
+          <span class="badge ${badgeCls}">${type}</span>
+        </div>
+        ${size ? `<div class="dl-size">${size}</div>` : ''}
+      </a>`
+    }).join('')
+
+    return `<div class="release">
+      <div class="release-header">
+        <div class="release-version">
+          <span class="tag">${rel.tag_name}</span>
+          ${isLatest ? '<span class="latest-badge">最新</span>' : ''}
+        </div>
+        <div class="release-date">${formatDate(rel.published_at)}</div>
+      </div>
+      <div class="release-notes">${notesHtml}</div>
+      <div class="downloads">${cards}</div>
+    </div>`
+  }).filter(Boolean).join('')
+
+  el.innerHTML = html || '<div class="state-msg"><div class="icon">📦</div><p>还没有发布版本，敬请期待</p></div>'
+}
+
+async function fetchReleases() {
+  try {
+    const res = await fetch(API)
+    if (!res.ok) throw new Error(`HTTP ${res.status}`)
+    const data = await res.json()
+    if (!Array.isArray(data) || data.length === 0) {
+      document.getElementById('releases').innerHTML =
+        '<div class="state-msg"><div class="icon">📦</div><p>还没有发布版本，敬请期待</p></div>'
+      document.getElementById('urlText').textContent = '暂无'
+      return
+    }
+    renderReleases(data)
+  } catch (err) {
+    document.getElementById('releases').innerHTML =
+      `<div class="state-msg"><div class="icon">⚠️</div><p>加载失败：${err.message}<br><small>请刷新重试</small></p></div>`
+    document.getElementById('urlText').textContent = '加载失败'
+  }
+}
+
+fetchReleases()
+</script>
+</body>
+</html>
