@@ -6,7 +6,6 @@
 
 ### ✨ 新功能
 
-- **新增游戏：蔚蓝档案** — 角色库扩展到 6 个游戏共 452 个角色，`GAME_FOLDER_MAP` 和 `characters.json` 全线同步 🎉
 - **🎭 赛博分发站上线** — `docs/` 目录搞了个 GitHub Pages 下载页，赛博朋克背景 + 霓虹标题，macOS 离线/在线包一目了然。最新版的包地址直接可复制，标签页还带图标。白嫖 GitHub 不花钱，香 🤑
 
 ### 🔧 功能重构
@@ -31,20 +30,6 @@
 - **macOS 真实版本** — 新增 IPC `getSystemInfo`，走主进程 `sw_vers -productVersion` 获取真实 macOS 版本，不再报 10.15
 - **日志捕获加固** — IIFE 包裹 + 防重复 + 启动自检标记，彻底解决「日志未启用」的问题
 - **App 版本注入** — Vite define 正确替换 `__APP_VERSION__`，反馈 Issue 里不再显示 `unknown`
-
-### 🎮 Steam Deck 后端服务器
-
-- **系统部署** — Ubuntu Server 24.04 LTS + Docker + MongoDB 7.0，全栈跑通
-- **安全加固** — Tailscale 组网（Mac ↔ Deck 直连）+ UFW 防火墙（仅放行局域网和 Tailscale）+ SSH 密钥登录关密码
-- **磁盘扩容** — 100G → 400G，LVM 在线扩展不用重启
-- **定时开关机** — 每晚 22:00 自动关机 + RTC 唤醒，早 8:00 自己醒，省电不操心 ⏰
-
-### 🎨 赛博质量大盘
-
-- **实时监控面板** — Vite + React 做的 Web 面板，CPU/内存/磁盘/服务状态一览无余，赛博网格背景 + 霓虹配色 + 扫描线动画
-- **反馈质量大盘** — GitHub Issues 统计、MongoDB 归档数据、待处理/已关闭一目了然
-- **自动同步** — 开机即同步，之后每 30 分钟拉一次 GitHub Issues 到 MongoDB 📡
-- **面板地址** — `http://steamdeck:5000`（Tailscale 网络下随处可访）
 
 ---
 
