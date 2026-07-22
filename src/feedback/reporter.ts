@@ -32,10 +32,6 @@ function formatIssueBody(data: FeedbackData): string {
     lines.push('## 📄 日志', '', '```', data.logs, '```', '')
   }
 
-  if (data.contact) {
-    lines.push('---', '', `📧 联系方式：${data.contact}`)
-  }
-
   return lines.join('\n')
 }
 

@@ -29,7 +29,6 @@ interface Props {
 export default function FeedbackModal({ open, onClose }: Props) {
   const [type, setType] = useState<FeedbackData['type']>('feedback')
   const [messageText, setMessageText] = useState('')
-  const [contact, setContact] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
   const handleSubmit = async () => {
@@ -41,14 +40,12 @@ export default function FeedbackModal({ open, onClose }: Props) {
     setSubmitting(true)
     try {
       const data = await collectFeedback(type, messageText.trim())
-      if (contact.trim()) data.contact = contact.trim()
 
       const result = await submitFeedback(data)
 
       if (result.success) {
         message.success('反馈已提交！感谢你的反馈 🎉')
         setMessageText('')
-        setContact('')
         onClose()
       } else {
         message.error(result.error || '提交失败，请稍后重试')
@@ -111,17 +108,6 @@ export default function FeedbackModal({ open, onClose }: Props) {
           rows={4}
           maxLength={2000}
           showCount
-        />
-      </div>
-
-      <div style={{ marginBottom: 0 }}>
-        <Text style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>
-          联系方式 <Text type='secondary' style={{ fontSize: 11 }}>（可选，方便我们联系你）</Text>
-        </Text>
-        <Input
-          value={contact}
-          onChange={e => setContact(e.target.value)}
-          placeholder='邮箱 / QQ / 微信号…'
         />
       </div>
     </Modal>
