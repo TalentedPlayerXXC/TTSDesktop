@@ -12,6 +12,7 @@
 ### 🔒 Security Fixes
 
 - **Log path sanitization** — Absolute paths in feedback logs are now trimmed to `/last/two/segments` before submission. Usernames and directory structure stay hidden. Fixed matching for paths containing spaces like `Application Support` 🛡️
+- **Contact field removed** — Feedback modal no longer asks for email/QQ/WeChat. GitHub Issues are public — no personal identifiable information collected 🚫
 
 ### 🎨 Distribution Page Polish
 
