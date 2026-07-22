@@ -1,6 +1,16 @@
 import { Component, ErrorInfo, ReactNode } from 'react'
 import { WarningOutlined } from '@ant-design/icons'
+import { submitFeedback } from '../feedback/reporter'
+import { collectFeedback, sanitizePath } from '../feedback/collector'
 import './ErrorBoundary.css'
+
+/** 同会话内已上报的错误 key 集合，页面刷新后重置 */
+const reportedErrors = new Set<string>()
+
+function makeErrorKey(error: Error, stack: string): string {
+  const firstFrame = stack.match(/\n\s+at\s+(.+)/)?.[1] || ''
+  return `${error.name}:${error.message}|${firstFrame}`
+}
 
 interface Props {
   children: ReactNode
@@ -37,6 +47,45 @@ export default class ErrorBoundary extends Component<Props, State> {
     console.error('[ErrorBoundary] 捕获到渲染错误:', error)
     console.error('[ErrorBoundary] 组件堆栈:', errorInfo.componentStack)
     this.setState({ errorInfo })
+
+    // 自动上报到 GitHub Issues → 门将巡检链路
+    this.reportCrash(error, errorInfo)
+  }
+
+  async reportCrash(error: Error, errorInfo: ErrorInfo) {
+    // 防重：同会话内相同错误只报一次
+    const key = makeErrorKey(error, errorInfo.componentStack || '')
+    if (reportedErrors.has(key)) {
+      console.log('[ErrorBoundary] 跳过重复错误上报:', key)
+      return
+    }
+    reportedErrors.add(key)
+
+    try {
+      const componentStack = errorInfo.componentStack
+        ? sanitizePath(errorInfo.componentStack.trim())
+        : '(无堆栈)'
+
+      const message = [
+        `**${error.name}:** ${error.message}`,
+        '',
+        '**组件堆栈:**',
+        '```',
+        componentStack,
+        '```',
+      ].join('\n')
+
+      const data = await collectFeedback('crash', message)
+      const result = await submitFeedback(data)
+      if (result.success) {
+        console.log('[ErrorBoundary] 崩溃已自动上报:', result.issue_url)
+      } else {
+        console.warn('[ErrorBoundary] 自动上报失败:', result.error)
+      }
+    } catch (e) {
+      // 兜底：任何异常绝不影响用户界面
+      console.warn('[ErrorBoundary] 自动上报异常:', e)
+    }
   }
 
   handleReboot = () => {

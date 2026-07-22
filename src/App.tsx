@@ -8,6 +8,8 @@ import CyberpunkLoading from './components/CyberpunkLoading';
 import ModelDownload from './components/ModelDownload';
 import DisclaimerModal from './components/DisclaimerModal';
 import ErrorBoundary from './components/ErrorBoundary';
+import { submitFeedback } from './feedback/reporter'
+import { collectFeedback, sanitizePath } from './feedback/collector'
 import { SettingsProvider, useSettings } from './services/SettingsContext';
 import { ensureModelLoaded, loadModel, setCurrentModel } from './services/index'
 import { updateServerPort, getServerPortValue } from './services/request'
@@ -29,6 +31,25 @@ import Routers from './routes';
   // 立即写一条测试日志，验证捕获生效
   console.log('[日志捕获已启动]')
 })()
+
+// 全局错误监听 - 自动上报到门将链路
+window.addEventListener('error', (event) => {
+  const err = event.error
+  console.error('[全局错误]', err?.message || event.message)
+  const msg = err
+    ? `**${err.name}:** ${err.message}\n\n\`\`\`\n${err.stack ? sanitizePath(err.stack) : '(无堆栈)'}\n\`\`\``
+    : `**ErrorEvent:** ${event.message}`
+  collectFeedback('crash', msg).then(d => submitFeedback(d)).catch(() => {})
+})
+
+window.addEventListener('unhandledrejection', (event) => {
+  const err = event.reason
+  console.error('[未捕获 Promise 拒绝]', err?.message || String(err))
+  const msg = err?.stack
+    ? `**${err.name || 'UnhandledRejection'}:** ${err.message || String(err)}\n\n\`\`\`\n${sanitizePath(err.stack)}\n\`\`\``
+    : `**UnhandledRejection:** ${String(err)}`
+  collectFeedback('crash', msg).then(d => submitFeedback(d)).catch(() => {})
+})
 
 const items = [
   {

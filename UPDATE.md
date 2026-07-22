@@ -4,6 +4,16 @@
 
 ## 2026-07-22
 
+### 🛡️ 错误上报增强
+
+- **ErrorBoundary 崩溃自动上报** — 组件树渲染崩了不再只赛博弹窗，错误信息自动扔到 GitHub Issues，等待巡检 🧐
+- **全局 JS 错误捕获** — `window.onerror` + `unhandledrejection` 双监听，运行时错误和没接的 Promise 拒绝全自动上报，不放过任何一个炸 💥
+- **同会话防重** — 相同错误只报一次，页面刷新后重置，不会刷屏
+
+### 🔒 安全修复（脱敏加强版）
+
+- **路径脱敏覆盖全场景** — `sanitizePath` 现在能处理 Vite `http://localhost:5173/`、打包 `file:///`、asar 嵌套路径，开发/打包/安装到 Applications 一路通杀，绝对路径一根毛都不会漏到 GitHub 上 🛡️
+
 ### 📦 打包签名修复
 
 - **macOS 15 Sequoia 兼容修复** — `pack:online`/`pack:offline` 加入 ad-hoc codesign，生成完整的 `CodeResources` 封签文件。macOS 15 不再报「已损坏，扔垃圾桶」，降到「无法验证开发者→去设置允许」，其他版本无感 🎯

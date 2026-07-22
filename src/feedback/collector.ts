@@ -50,8 +50,8 @@ function readCurrentModel(): string | null {
   }
 }
 
-/** 脱敏日志中的绝对路径：/Users/xxx/.../a/b → /a/b */
-function sanitizePath(line: string): string {
+/** 脱敏路径中的用户信息：保留相对路径，去掉绝对路径 /Users/xxx/ 等 */
+export function sanitizePath(line: string): string {
   return line
     // macOS: /Users/xxx/.../a/b → /a/b  (守2段，路径可能含空格如 Application Support)
     .replace(/\/Users\/[^/]+\/(?:[^/]+\/)*([^/]+\/[^/]+)/g, '/$1')
@@ -60,8 +60,12 @@ function sanitizePath(line: string): string {
     .replace(/\/home\/[^/]+\/(?:[^/]+\/)*([^/]+\/[^/]+)/g, '/$1')
     .replace(/\/home\/[^/]+\/([^/]+)/g, '/$1')
     // Windows: C:\Users\xxx\...\a\b → \a\b
-    .replace(/[A-Za-z]:\\Users\\[^\\]+\\(?:[^\\]+\\)*([^\\]+\\[^\\]+)/g, '\\$1')
+    .replace(/[A-Za-z]:\\Users\\[^\\]+(?:[^\\]+\\)*([^\\]+\\[^\\]+)/g, '\\$1')
     .replace(/[A-Za-z]:\\Users\\[^\\]+\\([^\\]+)/g, '\\$1')
+    // Vite 开发服务器 URL: http://localhost:5173/src/xxx → /src/xxx
+    .replace(/https?:\/\/localhost:\d+\//g, '/')
+    // file:// 协议路径: file:///Users/xxx/.../a/b → /a/b
+    .replace(/file:\/\/\//g, '/')
 }
 
 /** 收集最近的控制台日志 */

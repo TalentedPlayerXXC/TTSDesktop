@@ -4,6 +4,16 @@
 
 ## 2026-07-22
 
+### 🛡️ Error Reporting Enhancements
+
+- **ErrorBoundary auto-reporting** — Component tree crashes no longer just show a cyberpunk screen; the error is auto-filed to GitHub Issues, awaiting the patrol 🧐
+- **Global JS error capture** — `window.onerror` + `unhandledrejection` listeners catch runtime errors and unhandled Promise rejections. Everything goes up, nothing slips through 💥
+- **Session dedup** — Same error only reported once per session. Page refresh resets the dedup set — no spam
+
+### 🔒 Security Fixes (Hardened Sanitization)
+
+- **Path sanitization covers all environments** — `sanitizePath` now handles Vite `http://localhost:5173/` URLs, `file:///` protocol, and asar-nested paths. Dev/build/installed-to-Applications — none of them will leak absolute paths to GitHub 🛡️
+
 ### 📦 Packaging & Signing Fixes
 
 - **macOS 15 Sequoia compatibility** — `pack:online`/`pack:offline` now run ad-hoc codesign with proper `CodeResources` sealing. macOS 15 no longer shows "app is damaged" — degrades to the normal "unidentified developer → allow in Settings" flow. Other macOS versions unaffected 🎯
