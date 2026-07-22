@@ -25,6 +25,7 @@ asarUnpack:
   - "mongo-worker.js"
   - "db.js"
 mac:
+  identity: null
   icon: "build/icon.png"
   target: "dmg"
   category: "public.app-category.utilities"

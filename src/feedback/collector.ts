@@ -50,12 +50,26 @@ function readCurrentModel(): string | null {
   }
 }
 
+/** 脱敏日志中的绝对路径：/Users/xxx/.../a/b → /a/b */
+function sanitizePath(line: string): string {
+  return line
+    // macOS: /Users/xxx/.../a/b → /a/b  (守2段)
+    .replace(/\/Users\/[^/\s]+\/(?:[^/\s]+\/)*([^/\s]+\/[^/\s]+)/g, '/$1')
+    .replace(/\/Users\/[^/\s]+\/([^/\s]+)/g, '/$1')
+    // Linux: /home/xxx/.../a/b → /a/b
+    .replace(/\/home\/[^/\s]+\/(?:[^/\s]+\/)*([^/\s]+\/[^/\s]+)/g, '/$1')
+    .replace(/\/home\/[^/\s]+\/([^/\s]+)/g, '/$1')
+    // Windows: C:\Users\xxx\...\a\b → \a\b
+    .replace(/[A-Za-z]:\\Users\\[^\\\s]+\\(?:[^\\\s]+\\)*([^\\\s]+\\[^\\\s]+)/g, '\\$1')
+    .replace(/[A-Za-z]:\\Users\\[^\\\s]+\\([^\\\s]+)/g, '\\$1')
+}
+
 /** 收集最近的控制台日志 */
 function collectLogs(): string {
   try {
     const logs = (window as any).__consoleLogs__
     if (Array.isArray(logs) && logs.length > 0) {
-      return logs.slice(-30).join('\n')
+      return logs.slice(-30).map(sanitizePath).join('\n')
     }
   } catch {}
   return '(日志收集未启用)'
