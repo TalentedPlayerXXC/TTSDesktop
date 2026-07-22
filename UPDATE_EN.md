@@ -2,6 +2,23 @@
 
 # Changelog
 
+## 2026-07-22
+
+### 📦 Packaging & Signing Fixes
+
+- **macOS 15 Sequoia compatibility** — `pack:online`/`pack:offline` now run ad-hoc codesign with proper `CodeResources` sealing. macOS 15 no longer shows "app is damaged" — degrades to the normal "unidentified developer → allow in Settings" flow. Other macOS versions unaffected 🎯
+- **electron-builder config hardened** — Both YAML files set `identity: null` for consistent signing behavior
+
+### 🔒 Security Fixes
+
+- **Log path sanitization** — Absolute paths in feedback logs are now trimmed to `/last/two/segments` before submission. Usernames and directory structure stay hidden. Fixed matching for paths containing spaces like `Application Support` 🛡️
+
+### 🎨 Distribution Page Polish
+
+- **Star badge ⭐** — Top-right corner now shows a live GitHub star count. Hover glows gold, click goes straight to the repo
+- **Project description** — Playful one-liner under the hero title so visitors instantly know what this is about
+- **Inline changelog** — Collapsible section at the bottom fetches `UPDATE.md` from the dev branch and renders it on the spot. No need to leave the page to see what's new
+
 ## 2026-07-21
 
 ### ✨ New Features

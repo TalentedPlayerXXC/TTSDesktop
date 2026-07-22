@@ -65,6 +65,28 @@
     pointer-events: none;
   }
 
+  /* ── star badge ── */
+  .star-badge {
+    position: fixed; top: 20px; right: 24px; z-index: 10;
+    display: flex; align-items: center; gap: 6px;
+    padding: 6px 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    text-decoration: none;
+    color: var(--text2);
+    font-size: 13px;
+    transition: all .3s;
+    backdrop-filter: blur(8px);
+  }
+  .star-badge:hover {
+    border-color: rgba(255, 215, 0, .5);
+    color: #ffd700;
+    box-shadow: 0 0 16px rgba(255, 215, 0, .1);
+  }
+  .star-badge .star-icon { font-size: 15px; }
+  .star-badge .star-count { font-weight: 600; }
+
   /* ── header ── */
   .hero {
     position: relative; z-index: 1;
@@ -79,13 +101,53 @@
   }
   .hero h1 .neon-cyan { color: var(--neon); }
   .hero h1 .neon-pink { color: var(--neon2); text-shadow: 0 0 20px rgba(255,0,255,.4), 0 0 60px rgba(255,0,255,.15); }
-  .hero p { color: var(--text2); font-size: 15px; margin-top: 8px; }
-  .hero .sub { font-size: 13px; color: var(--text2); margin-top: 4px; opacity: .6; }
+  .hero p { color: var(--text); font-size: 15px; margin-top: 8px; }
+  .hero .sub { font-size: 13px; color: var(--text); margin-top: 4px; opacity: .7; }
+  .hero .desc { font-size: 13px; color: var(--text); margin-top: 12px; max-width: 440px; margin-left: auto; margin-right: auto; line-height: 1.7; opacity: .7; }
 
   .container {
     position: relative; z-index: 1;
     max-width: 680px; margin: 0 auto; padding: 32px 20px 80px;
   }
+
+  /* ── changelog ── */
+  .changelog-toggle {
+    display: inline-flex; align-items: center; gap: 6px;
+    margin-top: 16px;
+    font-size: 13px; color: var(--text); cursor: pointer;
+    transition: color .2s;
+    background: none; border: none; font-family: var(--font);
+  }
+  .changelog-toggle:hover { color: var(--neon); }
+  .changelog-body {
+    margin-top: 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    max-height: 400px;
+    overflow-y: auto;
+    font-size: 12px;
+    line-height: 1.8;
+    display: none;
+  }
+  .changelog-body.open { display: block; }
+  .changelog-body a { color: var(--neon); }
+  .changelog-body code {
+    background: rgba(0,255,255,.08);
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 11px;
+  }
+  .changelog-body h3 {
+    font-size: 14px; color: var(--neon); margin: 16px 0 6px;
+  }
+  .changelog-body h3:first-child { margin-top: 0; }
+  .changelog-body ul { padding-left: 16px; margin: 4px 0; }
+  .changelog-body li { margin-bottom: 4px; line-height: 1.7; }
+  .changelog-body strong { color: var(--text); }
+  .changelog-body::-webkit-scrollbar { width: 4px; }
+  .changelog-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 
   /* ── URL bar ── */
   .url-bar {
@@ -241,10 +303,16 @@
 <div class="glow-left"></div>
 <div class="glow-right"></div>
 
+<a class="star-badge" href="https://github.com/TalentedPlayerXXC/TTSDesktop" target="_blank">
+  <span class="star-icon">⭐</span>
+  <span class="star-count" id="starCount">-</span>
+</a>
+
 <div class="hero">
   <h1><span class="neon-cyan">绘</span><span class="neon-pink">声</span> · TTSDesktop</h1>
   <p>让文字会说话，让声音有灵魂</p>
   <div class="sub">macOS · 本地语音合成 · MLX 加速</div>
+  <p class="desc">双引擎加持（Qwen3 TTS + VoxCPM2 🚀）· 单人配音、多人唠嗑、情感演绎、音色克隆一条龙 · 本地跑，不联网，你的数据你作主 🔒</p>
 </div>
 
 <div class="container">
@@ -255,6 +323,16 @@
   </div>
 
   <div id="releases"><div class="state-msg"><div class="icon">⏳</div><p>正在加载发布版本…</p></div></div>
+
+  <div style="text-align:center; margin-top: 8px;">
+    <button class="changelog-toggle" id="changelogToggle" onclick="toggleChangelog()">
+      📋 更新日志 <span id="changelogArrow">▸</span>
+    </button>
+    <div style="margin-top:4px; font-size:11px; color:var(--text); opacity:.6;">
+      完整日志：<a href="https://github.com/TalentedPlayerXXC/TTSDesktop/blob/dev/UPDATE.md" target="_blank" style="color:var(--neon);">GitHub UPDATE.md ↗</a>
+    </div>
+  </div>
+  <div class="changelog-body" id="changelogBody"><p style="color:var(--text2);">加载中…</p></div>
 </div>
 
 <div class="footer">
@@ -399,6 +477,92 @@ async function fetchReleases() {
 }
 
 fetchReleases()
+
+// ── star count ──
+async function fetchStars() {
+  try {
+    const res = await fetch('https://api.github.com/repos/TalentedPlayerXXC/TTSDesktop')
+    if (!res.ok) throw new Error()
+    const data = await res.json()
+    document.getElementById('starCount').textContent = data.stargazers_count || 0
+  } catch {
+    document.getElementById('starCount').textContent = '⭐'
+  }
+}
+fetchStars()
+
+// ── changelog ──
+let changelogLoaded = false
+async function toggleChangelog() {
+  const body = document.getElementById('changelogBody')
+  const arrow = document.getElementById('changelogArrow')
+  const isOpen = body.classList.toggle('open')
+  arrow.textContent = isOpen ? '▾' : '▸'
+
+  if (!changelogLoaded && isOpen) {
+    try {
+      const res = await fetch('https://raw.githubusercontent.com/TalentedPlayerXXC/TTSDesktop/dev/UPDATE.md')
+      if (!res.ok) throw new Error()
+      const md = await res.text()
+      body.innerHTML = renderMd(md)
+    } catch {
+      body.innerHTML = '<p style="color:var(--text2);">加载失败，请查看 <a href="https://github.com/TalentedPlayerXXC/TTSDesktop/blob/main/UPDATE.md" target="_blank">GitHub UPDATE.md</a></p>'
+    }
+    changelogLoaded = true
+  }
+}
+
+function renderMd(md) {
+  // 按 ## 日期分割，跳过文件头
+  const blocks = md.split(/\n(?=## )/).slice(1)
+  return blocks.map(block => {
+    // 逐行处理
+    const lines = block.split('\n')
+    let html = ''
+    let inList = false
+
+    lines.forEach(line => {
+      const trimmed = line.trim()
+      if (!trimmed) { html += '\n'; return }
+
+      // ## 日期
+      if (/^## /.test(trimmed)) {
+        if (inList) { html += '</ul>\n'; inList = false }
+        html += `<h3>${trimmed.replace(/^## /, '')}</h3>\n`
+        return
+      }
+      // ### 小标题
+      if (/^### /.test(trimmed)) {
+        if (inList) { html += '</ul>\n'; inList = false }
+        html += `<strong>${trimmed.replace(/^### /, '')}</strong>\n`
+        return
+      }
+      // - 列表项
+      if (/^- /.test(trimmed)) {
+        const content = inlineFormat(trimmed.replace(/^- /, ''))
+        if (!inList) { html += '<ul>\n'; inList = true }
+        html += `<li>${content}</li>\n`
+        return
+      }
+      // 普通文字
+      if (inList) { html += '</ul>\n'; inList = false }
+      html += `<p>${inlineFormat(trimmed)}</p>\n`
+    })
+
+    if (inList) html += '</ul>\n'
+
+    // 移除 ``` 代码块
+    html = html.replace(/```[\s\S]*?```/g, '')
+    return html.trim()
+  }).join('\n<hr style="border-color:var(--border);margin:12px 0;">\n')
+}
+
+function inlineFormat(text) {
+  return text
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" target="_blank">$1</a>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+}
 </script>
 </body>
 </html>
