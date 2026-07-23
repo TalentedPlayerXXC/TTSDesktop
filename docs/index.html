@@ -67,8 +67,7 @@
 
   /* ── star badge ── */
   .star-badge {
-    position: fixed; top: 20px; right: 24px; z-index: 10;
-    display: flex; align-items: center; gap: 6px;
+    display: inline-flex; align-items: center; gap: 6px;
     padding: 6px 14px;
     background: var(--surface);
     border: 1px solid var(--border);
@@ -86,6 +85,49 @@
   }
   .star-badge .star-icon { font-size: 15px; }
   .star-badge .star-count { font-weight: 600; }
+
+  /* ── top nav ── */
+  .top-nav {
+    position: fixed; top: 20px; right: 24px; z-index: 10;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .top-nav a {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 6px 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    text-decoration: none;
+    color: var(--text2);
+    font-size: 13px;
+    transition: all .3s;
+    backdrop-filter: blur(8px);
+    white-space: nowrap;
+  }
+  .top-nav a:hover {
+    border-color: rgba(0,255,255,.4);
+    color: var(--text);
+    box-shadow: 0 0 16px rgba(0,255,255,.1);
+  }
+  .top-nav .star-badge {
+    padding: 6px 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    text-decoration: none;
+    color: var(--text2);
+    font-size: 13px;
+    transition: all .3s;
+    backdrop-filter: blur(8px);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .top-nav .star-badge:hover {
+    border-color: rgba(255, 215, 0, .5);
+    color: #ffd700;
+    box-shadow: 0 0 16px rgba(255, 215, 0, .1);
+  }
 
   /* ── header ── */
   .hero {
@@ -295,6 +337,8 @@
     .downloads { flex-direction: column; }
     .download-card { min-width: auto; }
     .url-bar { flex-wrap: wrap; }
+    .top-nav { right: 12px; top: 12px; flex-wrap: wrap; justify-content: flex-end; }
+    .top-nav a { font-size: 11px; padding: 4px 8px; }
   }
 </style>
 </head>
@@ -303,10 +347,14 @@
 <div class="glow-left"></div>
 <div class="glow-right"></div>
 
-<a class="star-badge" href="https://github.com/TalentedPlayerXXC/TTSDesktop" target="_blank">
-  <span class="star-icon">⭐</span>
-  <span class="star-count" id="starCount">-</span>
-</a>
+<div class="top-nav">
+  <a href="huisheng-client.html">📐 前端架构</a>
+  <a href="huisheng-serve.html">⚙️ 后端架构</a>
+  <a class="star-badge" href="https://github.com/TalentedPlayerXXC/TTSDesktop" target="_blank">
+    <span class="star-icon">⭐</span>
+    <span class="star-count" id="starCount">-</span>
+  </a>
+</div>
 
 <div class="hero">
   <h1><span class="neon-cyan">绘</span><span class="neon-pink">声</span> · TTSDesktop</h1>

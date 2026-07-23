@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>绘声 · 前端客户端架构</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<style>
+:root {
+  --bg: #0a0a12;
+  --surface: rgba(18, 18, 40, 0.85);
+  --surface2: rgba(30, 30, 60, 0.7);
+  --border: rgba(0, 255, 255, 0.15);
+  --text: #e0e0f0;
+  --text2: #7a7aaa;
+  --neon: #00ffff;
+  --neon2: #ff00ff;
+  --font: 'SF Mono', 'JetBrains Mono', 'Cascadia Code', monospace;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  min-height: 100vh;
+  position: relative;
+  overflow-x: hidden;
+}
+body::before {
+  content: '';
+  position: fixed; inset: 0; z-index: 0;
+  background-image:
+    linear-gradient(rgba(0,255,255,.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,255,255,.04) 1px, transparent 1px);
+  background-size: 48px 48px;
+  pointer-events: none;
+}
+body::after {
+  content: '';
+  position: fixed; inset: 0; z-index: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent, transparent 2px,
+    rgba(0,255,255,.015) 2px, rgba(0,255,255,.015) 4px
+  );
+  pointer-events: none;
+  animation: scan 8s linear infinite;
+}
+@keyframes scan {
+  0%   { transform: translateY(0); }
+  100% { transform: translateY(4px); }
+}
+.glow-left {
+  position: fixed; left: -200px; top: 20%; z-index: 0;
+  width: 500px; height: 500px;
+  background: radial-gradient(circle, rgba(0,255,255,.06) 0%, transparent 70%);
+  pointer-events: none;
+}
+.glow-right {
+  position: fixed; right: -200px; bottom: 10%; z-index: 0;
+  width: 500px; height: 500px;
+  background: radial-gradient(circle, rgba(255,0,255,.06) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+/* ── top nav ── */
+.top-nav {
+  position: fixed; top: 20px; right: 24px; z-index: 10;
+  display: flex; align-items: center; gap: 6px;
+}
+.top-nav a {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 6px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  text-decoration: none;
+  color: var(--text2);
+  font-size: 13px;
+  transition: all .3s;
+  backdrop-filter: blur(8px);
+  white-space: nowrap;
+}
+.top-nav a:hover {
+    border-color: rgba(0,255,255,.4);
+    color: var(--text);
+    box-shadow: 0 0 16px rgba(0,255,255,.1);
+  }
+  .top-nav .star-badge {
+    padding: 6px 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    text-decoration: none;
+    color: var(--text2);
+    font-size: 13px;
+    transition: all .3s;
+    backdrop-filter: blur(8px);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .top-nav .star-badge:hover {
+    border-color: rgba(255, 215, 0, .5);
+    color: #ffd700;
+    box-shadow: 0 0 16px rgba(255, 215, 0, .1);
+  }
+
+/* ── hero ── */
+.hero {
+  position: relative; z-index: 1;
+  padding: 60px 24px 36px;
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+}
+.hero h1 {
+  font-size: 48px;
+  font-weight: 700;
+  text-shadow: 0 0 20px rgba(0,255,255,.4), 0 0 60px rgba(0,255,255,.15);
+}
+.hero h1 .neon-cyan { color: var(--neon); }
+.hero h1 .neon-pink { color: var(--neon2); text-shadow: 0 0 20px rgba(255,0,255,.4), 0 0 60px rgba(255,0,255,.15); }
+.hero p { color: var(--text); font-size: 15px; margin-top: 8px; }
+.hero .sub { font-size: 13px; color: var(--text); margin-top: 4px; opacity: .7; }
+.hero .desc { font-size: 13px; color: var(--text2); margin-top: 12px; max-width: 520px; margin-left: auto; margin-right: auto; line-height: 1.7; }
+
+/* ── container ── */
+.container {
+  position: relative; z-index: 1;
+  max-width: 860px; margin: 0 auto; padding: 32px 20px 80px;
+}
+
+/* ── details / cards ── */
+details.arch-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  margin-bottom: 20px;
+  transition: border-color .3s;
+  backdrop-filter: blur(6px);
+}
+details.arch-section:hover { border-color: rgba(0,255,255,.25); }
+
+details.arch-section summary {
+  padding: 18px 22px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--neon);
+  user-select: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+details.arch-section summary::-webkit-details-marker { display: none; }
+details.arch-section summary::before {
+  content: '▾';
+  color: var(--text2);
+  font-size: 12px;
+  transition: transform .2s;
+}
+details.arch-section[open] summary::before {
+  transform: rotate(0deg);
+}
+details.arch-section:not([open]) summary::before {
+  transform: rotate(-90deg);
+}
+
+details.arch-section .card-content {
+  padding: 0 22px 22px;
+  font-size: 14px;
+  line-height: 1.8;
+}
+details.arch-section .card-content p { margin-bottom: 10px; }
+details.arch-section .card-content ul { padding-left: 20px; margin: 8px 0; }
+details.arch-section .card-content li { margin-bottom: 4px; }
+details.arch-section .card-content strong { color: var(--text); }
+details.arch-section .card-content code {
+  background: rgba(0,255,255,.08);
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 13px;
+  font-family: var(--font);
+}
+details.arch-section .card-content .tag {
+  display: inline-block;
+  background: rgba(0,255,255,.1);
+  color: var(--neon);
+  padding: 1px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+/* ── sub-details (二级折叠) ── */
+details.arch-sub {
+  margin: 12px 0;
+  border-left: 2px solid var(--border);
+  padding-left: 14px;
+}
+details.arch-sub summary {
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  color: var(--text);
+  user-select: none;
+}
+details.arch-sub summary::-webkit-details-marker { display: none; }
+details.arch-sub summary::before {
+  content: '▸ ';
+  color: var(--text2);
+}
+details.arch-sub[open] summary::before {
+  content: '▾ ';
+}
+details.arch-sub .sub-content {
+  padding: 8px 0 4px;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+/* ── SVG container ── */
+.svg-diagram {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 20px;
+  margin: 12px 0;
+  overflow-x: auto;
+  text-align: center;
+}
+.svg-diagram svg { max-width: 100%; height: auto; }
+
+/* ── code blocks ── */
+pre.code-block {
+  background: rgba(0,0,0,.4);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 14px 16px;
+  margin: 10px 0;
+  overflow-x: auto;
+  font-family: var(--font);
+  font-size: 12px;
+  line-height: 1.6;
+  color: #c9d1d9;
+}
+pre.code-block .kw { color: #ff7b72; }
+pre.code-block .str { color: #a5d6ff; }
+pre.code-block .cm { color: #8b949e; font-style: italic; }
+pre.code-block .fn { color: #d2a8ff; }
+pre.code-block .tp { color: #79c0ff; }
+pre.code-block .num { color: #79c0ff; }
+pre.code-block .op { color: #ff7b72; }
+
+/* ── tag list ── */
+.tag-list { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+.tag-list .tag-item {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 3px 10px;
+  font-size: 12px;
+  color: var(--text2);
+}
+
+/* ── data flow ── */
+.flow-diagram {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin: 12px 0;
+  font-family: var(--font);
+  font-size: 12px;
+  line-height: 2;
+  white-space: pre;
+  overflow-x: auto;
+}
+.flow-diagram .arrow { color: var(--neon2); }
+.flow-diagram .node { color: var(--neon); }
+.flow-diagram .step { color: var(--text2); }
+
+/* ── footer ── */
+.footer {
+  position: relative; z-index: 1;
+  text-align: center; padding: 40px 20px; color: var(--text2); font-size: 12px;
+  border-top: 1px solid var(--border);
+}
+.footer a { color: var(--neon); text-decoration: none; }
+.footer a:hover { text-decoration: underline; }
+
+@media (max-width: 700px) {
+  .hero h1 { font-size: 30px; }
+  .top-nav { right: 12px; top: 12px; flex-wrap: wrap; justify-content: flex-end; }
+  .top-nav a { font-size: 11px; padding: 4px 8px; }
+}
+</style>
+</head>
+<body>
+
+<div class="glow-left"></div>
+<div class="glow-right"></div>
+
+<div class="top-nav">
+  <a href="index.html">🏠 发布页</a>
+  <a href="huisheng-serve.html">⚙️ 后端架构</a>
+  <a class="star-badge" href="https://github.com/TalentedPlayerXXC/TTSDesktop" target="_blank">
+    <span class="star-icon">⭐</span>
+    <span class="star-count" id="starCount">-</span>
+  </a>
+</div>
+
+<div class="hero">
+  <h1><span class="neon-cyan">绘</span><span class="neon-pink">声</span> <span style="font-size:20px;color:var(--text2);">· 前端客户端架构</span></h1>
+  <p>Electron + React + Vite 桌面应用</p>
+  <div class="sub">语音合成客户端 · 双引擎驱动 · macOS 原生体验</div>
+  <p class="desc">基于 Electron 构建的本地 TTS 桌面客户端，通过 Vite + React 19 提供现代化 UI，MLX 后端驱动语音合成。</p>
+</div>
+
+<div class="container">
+
+<!-- ============================================================ -->
+<details class="arch-section" open>
+<summary>🏗️ 整体架构总览</summary>
+<div class="card-content">
+
+<p>绘声采用经典的 <strong>Electron 双进程模型</strong>：主进程（Main Process）负责系统集成和子进程管理，渲染进程（Renderer Process）负责用户界面。两者通过 <code>contextBridge</code> + <code>ipcRenderer</code> 安全通信，隔离级别为 <code>contextIsolation: true</code> / <code>nodeIntegration: false</code>。</p>
+
+<div class="svg-diagram">
+<svg viewBox="0 0 760 340" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="gMain" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#0a2a4a"/><stop offset="100%" stop-color="#0a1a2a"/></linearGradient>
+    <linearGradient id="gPre" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#2a1a3a"/><stop offset="100%" stop-color="#1a0a2a"/></linearGradient>
+    <linearGradient id="gRender" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#0a2a2a"/><stop offset="100%" stop-color="#0a1a1a"/></linearGradient>
+  </defs>
+
+  <!-- Main Process -->
+  <rect x="30" y="20" width="220" height="140" rx="8" fill="url(#gMain)" stroke="#00ffff" stroke-width="1.5" stroke-opacity=".5"/>
+  <text x="140" y="42" text-anchor="middle" fill="#00ffff" font-size="12" font-weight="600">Electron 主进程</text>
+  <text x="140" y="60" text-anchor="middle" fill="#7a7aaa" font-size="10">Node.js + child_process</text>
+  <text x="50" y="80" fill="#c9d1d9" font-size="10">• 后端子进程管理 (spawn)</text>
+  <text x="50" y="96" fill="#c9d1d9" font-size="10">• 端口发现 (stdout 解析)</text>
+  <text x="50" y="112" fill="#c9d1d9" font-size="10">• IPC Handlers (15+)</text>
+  <text x="50" y="128" fill="#c9d1d9" font-size="10">• 进程清理 (诛九族)</text>
+  <text x="50" y="144" fill="#c9d1d9" font-size="10">• MongoDB Worker (fork)</text>
+
+  <!-- Preload -->
+  <rect x="270" y="30" width="160" height="120" rx="8" fill="url(#gPre)" stroke="#ff00ff" stroke-width="1.5" stroke-opacity=".4"/>
+  <text x="350" y="55" text-anchor="middle" fill="#ff00ff" font-size="12" font-weight="600">Preload 层</text>
+  <text x="350" y="75" text-anchor="middle" fill="#7a7aaa" font-size="10">contextBridge</text>
+  <text x="285" y="95" fill="#c9d1d9" font-size="10">• electronAPI 命名空间</text>
+  <text x="285" y="111" fill="#c9d1d9" font-size="10">• ipcRenderer.invoke</text>
+  <text x="285" y="127" fill="#c9d1d9" font-size="10">• 事件监听 (backend-log)</text>
+
+  <!-- Renderer Process -->
+  <rect x="450" y="20" width="280" height="140" rx="8" fill="url(#gRender)" stroke="#00ffff" stroke-width="1.5" stroke-opacity=".5"/>
+  <text x="590" y="42" text-anchor="middle" fill="#00ffff" font-size="12" font-weight="600">渲染进程</text>
+  <text x="590" y="58" text-anchor="middle" fill="#7a7aaa" font-size="10">Vite + React 19 + TypeScript</text>
+  <text x="465" y="78" fill="#c9d1d9" font-size="10">• React Router: 5 个路由页面</text>
+  <text x="465" y="94" fill="#c9d1d9" font-size="10">• antd UI 组件库</text>
+  <text x="465" y="110" fill="#c9d1d9" font-size="10">• Axios / Fetch 双实现</text>
+  <text x="465" y="126" fill="#c9d1d9" font-size="10">• ErrorBoundary 全局兜底</text>
+  <text x="465" y="142" fill="#c9d1d9" font-size="10">• GitHub Issues 自动上报</text>
+
+  <!-- Arrows: Main → Preload → Renderer -->
+  <line x1="250" y1="50" x2="268" y2="55" stroke="#ff00ff" stroke-width="1.5" stroke-opacity=".5" marker-end="url(#arrowPink)"/>
+  <line x1="430" y1="55" x2="448" y2="50" stroke="#ff00ff" stroke-width="1.5" stroke-opacity=".5"/>
+
+  <!-- Backend Box -->
+  <rect x="30" y="190" width="200" height="60" rx="8" fill="url(#gMain)" stroke="#ff00ff" stroke-width="1.5" stroke-opacity=".4"/>
+  <text x="130" y="215" text-anchor="middle" fill="#ff00ff" font-size="12" font-weight="600">后端服务</text>
+  <text x="130" y="235" text-anchor="middle" fill="#7a7aaa" font-size="10">tts_serve_mlx (子进程)</text>
+
+  <!-- Backend-Arrow: Main → Backend -->
+  <line x1="90" y1="160" x2="110" y2="190" stroke="#ff00ff" stroke-width="1.5" stroke-opacity=".4"/>
+
+  <!-- Communication labels -->
+  <text x="350" y="170" text-anchor="middle" fill="#7a7aaa" font-size="10">IPC 通信 | port 8000-8050</text>
+  <line x1="270" y1="165" x2="590" y2="165" stroke="#00ffff" stroke-width="1" stroke-opacity=".2" stroke-dasharray="4,3"/>
+
+  <!-- Legend -->
+  <rect x="530" y="190" width="200" height="110" rx="6" fill="rgba(18,18,40,.7)" stroke="rgba(0,255,255,.1)" stroke-width="1"/>
+  <text x="540" y="210" fill="#7a7aaa" font-size="10" font-weight="600">技术栈</text>
+  <text x="540" y="226" fill="#c9d1d9" font-size="10">▸ Electron 42 · Vite 6 · React 19</text>
+  <text x="540" y="242" fill="#c9d1d9" font-size="10">▸ antd 6 · react-router 7</text>
+  <text x="540" y="258" fill="#c9d1d9" font-size="10">▸ Axios 1.16 · Tone.js 15</text>
+  <text x="540" y="274" fill="#c9d1d9" font-size="10">▸ WaveSurfer.js 7</text>
+  <text x="540" y="290" fill="#c9d1d9" font-size="10">▸ PyInstaller 打包后端</text>
+</svg>
+</div>
+
+</div>
+</details>
+
+<!-- ============================================================ -->
+<details class="arch-section" open>
+<summary>🖥️ Layer 1 — Electron 主进程 (<code>main.js</code>)</summary>
+<div class="card-content">
+
+<p>主进程是整个应用的"操作系统胶水层"，负责后端生命期管理、IPC 接口、系统集成。</p>
+
+<details class="arch-sub" open>
+<summary>后端子进程管理</summary>
+<div class="sub-content">
+<p>启动时通过 <code>child_process.spawn</code> 启动 <code>tts_serve_mlx</code> 二进制：</p>
+<pre class="code-block"><span class="cm">// 不传 TTS_SERVE_PORT，让后端自动找空闲端口（8000-8050）</span>
+serverProcess = spawn(serverExe, [], {
+  cwd: serverCwd,
+  env: {
+    ...process.env,
+    TTS_SERVE_HOST: <span class="str">'127.0.0.1'</span>,
+    TTS_SERVE_LOG_LEVEL: <span class="str">'warning'</span>,
+    TTS_SERVE_MODELS_DIR: modelsDir,
+  },
+  stdio: [<span class="str">'ignore'</span>, <span class="str">'pipe'</span>, <span class="str">'pipe'</span>],
+})</pre>
+<p><strong>端口发现机制：</strong>监听后端 stdout，解析 <code>TTS_SERVER_PORT=xxxxx</code> 行获取动态端口。随后轮询 <code>/health</code> 端点（500ms 间隔，120s 超时）确认服务就绪。</p>
+</div>
+</details>
+
+<details class="arch-sub" open>
+<summary>进程清理 — "诛九族"策略</summary>
+<div class="sub-content">
+<p>应用关闭时递归杀整个进程树，确保无孤儿进程残留：</p>
+<pre class="code-block"><span class="kw">function</span> <span class="fn">killProcessTree</span>(pid, signal = <span class="str">'SIGKILL'</span>) {
+  <span class="kw">try</span> {
+    <span class="kw">const</span> out = execSync(<span class="str">`pgrep -P ${pid}`</span>, { timeout: <span class="num">2000</span> }).trim()
+    <span class="kw">if</span> (out) out.split(<span class="str">'\n'</span>).filter(Boolean).forEach(
+      c => killProcessTree(parseInt(c), signal)
+    )
+  } <span class="kw">catch</span> (e) { <span class="cm">/* 已死 */</span> }
+  <span class="kw">try</span> { process.kill(pid, signal) } <span class="kw">catch</span> { }
+}</pre>
+<p>另外还加了一行 <code>execSync('pkill -f tts_serve_mlx')</code> 作为兜底。</p>
+</div>
+</details>
+
+<details class="arch-sub" open>
+<summary>IPC Handlers</summary>
+<div class="sub-content">
+<p>主进程通过 <code>ipcMain.handle</code> 暴露 15+ 个 RPC 接口供渲染进程调用：</p>
+<ul>
+<li><strong>系统集成：</strong> <code>select-audio</code>（原生文件选择对话框）</li>
+<li><strong>角色数据：</strong> <code>get-characters-local</code>（读取本地角色 JSON）、<code>mongo-get-characters</code>（MongoDB 查询）</li>
+<li><strong>角色音频：</strong> <code>get-character-path</code>、<code>get-character-emotions</code>、<code>get-character-preview-audio</code></li>
+<li><strong>模型管理：</strong> <code>get-server-port</code>、<code>get-startup-model</code>、<code>start-model-download</code>、<code>get-download-status</code></li>
+<li><strong>自定义角色：</strong> <code>migrate-custom-speaker</code>、<code>delete-custom-speaker</code>、<code>recover-custom-speakers</code></li>
+<li><strong>存储/系统：</strong> <code>get-storage-paths</code>、<code>get-system-info</code>、<code>delete-model-files</code>（三重安全校验）</li>
+</ul>
+</div>
+</details>
+
+<details class="arch-sub" open>
+<summary>MongoDB Worker</summary>
+<div class="sub-content">
+<p>通过 <code>child_process.fork</code> 启动 <code>mongo-worker.js</code> 子进程处理数据库查询。Worker 通过 IPC message 通信，使用 <code>replyId</code> 机制实现异步 RPC（15s 超时自动超时）。</p>
+</div>
+</details>
+
+<details class="arch-sub" open>
+<summary>模型生命周期</summary>
+<div class="sub-content">
+<p>应用启动时检查模型文件是否存在，存在则自动加载；不存在则跳过，交给前端 <code>ModelDownload</code> 组件处理。打包后隐藏菜单（<code>Menu.setApplicationMenu(null)</code>），开发模式打开 DevTools。</p>
+</div>
+</details>
+
+</div>
+</details>
+
+<!-- ============================================================ -->
+<details class="arch-section" open>
+<summary>🔌 Layer 2 — Preload 层 (<code>preload.js</code>)</summary>
+<div class="card-content">
+
+<p>通过 <code>contextBridge.exposeInMainWorld('electronAPI', { ... })</code> 安全暴露能力给渲染进程：</p>
+
+<pre class="code-block">contextBridge.exposeInMainWorld(<span class="str">'electronAPI'</span>, {
+  <span class="cm">// 文件系统</span>
+  selectAudio: <span class="fn">()</span> => ipcRenderer.invoke(<span class="str">'select-audio'</span>),
+  getCharactersLocal: <span class="fn">()</span> => ipcRenderer.invoke(<span class="str">'get-characters-local'</span>),
+  getServerPort: <span class="fn">()</span> => ipcRenderer.invoke(<span class="str">'get-server-port'</span>),
+
+  <span class="cm">// 角色音频</span>
+  getCharacterPreviewAudio: <span class="fn">(params)</span> => ipcRenderer.invoke(<span class="str">'get-character-preview-audio'</span>, params),
+  getCharacterEmotions: <span class="fn">(params)</span> => ipcRenderer.invoke(<span class="str">'get-character-emotions'</span>, params),
+  getCharacterPath: <span class="fn">(params)</span> => ipcRenderer.invoke(<span class="str">'get-character-path'</span>, params),
+
+  <span class="cm">// 自定义配音员</span>
+  migrateCustomSpeaker: <span class="fn">(params)</span> => ipcRenderer.invoke(<span class="str">'migrate-custom-speaker'</span>, params),
+  deleteCustomSpeaker: <span class="fn">(params)</span> => ipcRenderer.invoke(<span class="str">'delete-custom-speaker'</span>, params),
+  recoverCustomSpeakers: <span class="fn">()</span> => ipcRenderer.invoke(<span class="err">'recover-custom-speakers'</span>),
+
+  <span class="cm">// MongoDB</span>
+  mongo: {
+    connect: <span class="fn">()</span> => ipcRenderer.invoke(<span class="str">'mongo-connect'</span>),
+    getCharacters: <span class="fn">()</span> => ipcRenderer.invoke(<span class="str">'mongo-get-characters'</span>),
+    getTags: <span class="fn">()</span> => ipcRenderer.invoke(<span class="str">'mongo-get-tags'</span>),
+  },
+
+  <span class="cm">// 模型下载</span>
+  startModelDownload: <span class="fn">(modelKey)</span> => ipcRenderer.invoke(<span class="str">'start-model-download'</span>, modelKey),
+  getDownloadStatus: <span class="fn">(modelKey)</span> => ipcRenderer.invoke(<span class="str">'get-download-status'</span>, modelKey),
+  getStartupModel: <span class="fn">()</span> => ipcRenderer.invoke(<span class="str">'get-startup-model'</span>),
+  getStoragePaths: <span class="fn">()</span> => ipcRenderer.invoke(<span class="str">'get-storage-paths'</span>),
+  getSystemInfo: <span class="fn">()</span> => ipcRenderer.invoke(<span class="str">'get-system-info'</span>),
+  deleteModelFiles: <span class="fn">()</span> => ipcRenderer.invoke(<span class="str">'delete-model-files'</span>),
+  quitApp: <span class="fn">()</span> => ipcRenderer.invoke(<span class="str">'quit-app'</span>),
+})</pre>
+
+<p>安全要点：</p>
+<ul>
+<li><code>contextIsolation: true</code> — 渲染进程无法直接访问 Node.js API</li>
+<li><code>nodeIntegration: false</code> — 禁止 <code>require</code></li>
+<li>只暴露经过白名单的 IPC 通道，不做任何通用转发</li>
+</ul>
+
+</div>
+</details>
+
+<!-- ============================================================ -->
+<details class="arch-section" open>
+<summary>⚛️ Layer 3 — React 渲染进程</summary>
+<div class="card-content">
+
+<details class="arch-sub" open>
+<summary>路由设计</summary>
+<div class="sub-content">
+<p>基于 <code>react-router v7</code>，5 个核心页面 + 1 个登录页：</p>
+<div class="flow-diagram"><span class="node">/</span>        → <span class="step">TTSComponent</span>        <span class="cm">（默认：单人/多人/情感配音）</span>
+<span class="node">/tts</span>      → <span class="step">TTSComponent</span>        <span class="cm">（同上，独立入口）</span>
+<span class="node">/tts-beta</span> → <span class="step">TTSComponentBeta</span>   <span class="cm">（一句话语音克隆）</span>
+<span class="node">/voice-design</span> → <span class="step">VoiceDesign</span>    <span class="cm">（VoxCPM2 声音设计）</span>
+<span class="node">/sound-workshop</span> → <span class="step">SoundWorkshop</span> <span class="cm">（后期声效处理）</span>
+<span class="node">/settings</span> → <span class="step">SettingsComponent</span>  <span class="cm">（主题/缓存/角色管理）</span></div>
+</div>
+</details>
+
+<details class="arch-sub" open>
+<summary>组件树</summary>
+<div class="sub-content">
+<div class="flow-diagram">ErrorBoundary
+ └─ SettingsProvider (theme context)
+     └─ AppContent
+         ├─ LoginComp
+         │   ├─ LogoCanvas (canvas 粒子动效)
+         │   └─ LoginAvatar
+         ├─ SidebarMenu (antd Menu)
+         ├─ Mascot (浮动吉祥物)
+         ├─ ModelDownload (模型下载面板)
+         ├─ DisclaimerModal (免责声明)
+         ├─ CyberpunkLoading (加载动画)
+         └─ Routers (react-router)
+             ├─ TTSComponent
+             ├─ TTSComponentBeta
+             ├─ VoiceDesign
+             ├─ SoundWorkshop
+             └─ SettingsComponent</div>
+</div>
+</details>
+
+<details class="arch-sub" open>
+<summary>主题系统</summary>
+<div class="sub-content">
+<p>通过 <code>SettingsContext</code> 管理主题偏好，支持 <code>light / dark / system</code> 三种模式。使用 antd 的 <code>ConfigProvider</code> 切换 <code>defaultAlgorithm</code> / <code>darkAlgorithm</code>，同时将 <code>data-theme</code> 属性设到 <code>documentElement</code> 上供 CSS 变量使用。</p>
+</div>
+</details>
+
+<details class="arch-sub" open>
+<summary>TTSComponent — 配音核心页</summary>
+<div class="sub-content">
+<p>三种工作模式：</p>
+<ul>
+<li><strong>单人配音</strong> — 选择角色 → 输入文本 → 合成</li>
+<li><strong>多人配音</strong> — 添加多条配音线，每条选不同角色和文本</li>
+<li><strong>情感配音 <span class="tag">VoxCPM2</span></strong> — 选择情感标签 + 角色 → 带情感克隆</li>
+</ul>
+<p>角色数据来源：本地 <code>characters.json</code> + MongoDB 数据库 + 自定义配音员（localStorage + 文件系统双重持久化）。数据通过 sessionCache 内存缓存优化，避免频繁请求。</p>
+</div>
+</details>
+
+<details class="arch-sub" open>
+<summary>TTSComponentBeta — 一句话语音克隆</summary>
+<div class="sub-content">
+<p>最简化的克隆流程：上传参考音频 + 输入文本 → 一步完成。适合快速试听。调用 <code>POST /clone</code> 端点使用 Qwen3-TTS 模型。</p>
+</div>
+</details>
+
+<details class="arch-sub" open>
+<summary>VoiceDesign — VoxCPM2 声音设计</summary>
+<div class="sub-content">
+<p>纯 instruct 驱动的零样本声音设计：输入文本 + 声音描述提示词（如"御姐声线，声线偏暖略带气声"），通过 VoxCPM2 模型生成。支持 8 个预置提示词 + 自定义，输出可一键保存为自定义配音员。</p>
+</div>
+</details>
+
+<details class="arch-sub" open>
+<summary>SettingsComponent — 应用设置</summary>
+<div class="sub-content">
+<ul>
+<li><strong>主题切换</strong>：亮色/暗色/跟随系统</li>
+<li><strong>缓存管理</strong>：查看后端缓存状态，一键清理/按时间清理/按大小清理</li>
+<li><strong>模型管理</strong>：查看/删除已下载模型文件（三重安全校验）</li>
+<li><strong>自定义配音员</strong>：查看/删除本地自定义角色</li>
+<li><strong>存储路径</strong>：显示模型目录和用户数据目录</li>
+</ul>
+</div>
+</details>
+
+</div>
+</details>
+
+<!-- ============================================================ -->
+<details class="arch-section" open>
+<summary>🔗 Layer 4 — 服务层 (<code>services/</code>)</summary>
+<div class="card-content">
+
+<details class="arch-sub" open>
+<summary>双 HTTP 实现 — Axios + Fetch</summary>
+<div class="sub-content">
+<p>考虑到供应链安全，实现了两套完全独立的 HTTP 客户端：</p>
+<div class="tag-list">
+  <span class="tag-item">request.tsx ── Axios</span>
+  <span class="tag-item">fetch_request.tsx ── 原生 Fetch</span>
+</div>
+<p>两套 API 签名完全兼容，端口通过 <code>getServerPortValue()</code> 动态获取（<code>electronAPI.getServerPort()</code>）。默认使用 Axios，Fetch 版作为备胎，在 Axios 出现供应链问题时直接切换。</p>
+</div>
+</details>
+
+<details class="arch-sub" open>
+<summary>API 封装层 (<code>services/index.tsx</code>)</summary>
+<div class="sub-content">
+<p>对后端所有 REST 端点进行 TypeScript 类型安全的封装：</p>
+<table style="width:100%;border-collapse:collapse;font-size:12px;margin:8px 0;">
+<tr style="border-bottom:1px solid rgba(0,255,255,.15);">
+  <th style="padding:6px 10px;text-align:left;color:var(--neon);">函数</th>
+  <th style="padding:6px 10px;text-align:left;color:var(--neon);">端点</th>
+  <th style="padding:6px 10px;text-align:left;color:var(--neon);">说明</th>
+</tr>
+<tr style="border-bottom:1px solid rgba(0,255,255,.08);">
+  <td style="padding:5px 10px;"><code>getHealth()</code></td>
+  <td style="padding:5px 10px;">GET /health</td>
+  <td style="padding:5px 10px;">健康检查 + 模型加载状态</td>
+</tr>
+<tr style="border-bottom:1px solid rgba(0,255,255,.08);">
+  <td style="padding:5px 10px;"><code>loadModel()</code></td>
+  <td style="padding:5px 10px;">POST /model/load</td>
+  <td style="padding:5px 10px;">加载模型 (tts/voxcpm2)</td>
+</tr>
+<tr style="border-bottom:1px solid rgba(0,255,255,.08);">
+  <td style="padding:5px 10px;"><code>unloadModel()</code></td>
+  <td style="padding:5px 10px;">POST /model/unload</td>
+  <td style="padding:5px 10px;">卸载指定模型</td>
+</tr>
+<tr style="border-bottom:1px solid rgba(0,255,255,.08);">
+  <td style="padding:5px 10px;"><code>unloadAll()</code></td>
+  <td style="padding:5px 10px;">POST /model/unload</td>
+  <td style="padding:5px 10px;">全部卸载</td>
+</tr>
+<tr style="border-bottom:1px solid rgba(0,255,255,.08);">
+  <td style="padding:5px 10px;"><code>clone()</code></td>
+  <td style="padding:5px 10px;">POST /clone</td>
+  <td style="padding:5px 10px;">语音克隆合成</td>
+</tr>
+<tr style="border-bottom:1px solid rgba(0,255,255,.08);">
+  <td style="padding:5px 10px;"><code>batchClone()</code></td>
+  <td style="padding:5px 10px;">POST /batch-clone</td>
+  <td style="padding:5px 10px;">批量配音（可选合并）</td>
+</tr>
+<tr style="border-bottom:1px solid rgba(0,255,255,.08);">
+  <td style="padding:5px 10px;"><code>dialogue()</code></td>
+  <td style="padding:5px 10px;">POST /dialogue</td>
+  <td style="padding:5px 10px;">多角色对话</td>
+</tr>
+<tr style="border-bottom:1px solid rgba(0,255,255,.08);">
+  <td style="padding:5px 10px;"><code>voxClone()</code></td>
+  <td style="padding:5px 10px;">POST /vox/clone</td>
+  <td style="padding:5px 10px;">VoxCPM2 情感克隆</td>
+</tr>
+<tr style="border-bottom:1px solid rgba(0,255,255,.08);">
+  <td style="padding:5px 10px;"><code>voxDesign()</code></td>
+  <td style="padding:5px 10px;">POST /vox/design</td>
+  <td style="padding:5px 10px;">VoxCPM2 声音设计</td>
+</tr>
+<tr style="border-bottom:1px solid rgba(0,255,255,.08);">
+  <td style="padding:5px 10px;"><code>stt()</code></td>
+  <td style="padding:5px 10px;">POST /stt</td>
+  <td style="padding:5px 10px;">语音转文本</td>
+</tr>
+<tr style="border-bottom:1px solid rgba(0,255,255,.08);">
+  <td style="padding:5px 10px;"><code>getCacheStatus()</code></td>
+  <td style="padding:5px 10px;">GET /cache</td>
+  <td style="padding:5px 10px;">缓存状态</td>
+</tr>
+<tr>
+  <td style="padding:5px 10px;"><code>cleanupCache()</code></td>
+  <td style="padding:5px 10px;">POST /cleanup</td>
+  <td style="padding:5px 10px;">清理音频缓存</td>
+</tr>
+</table>
+</div>
+</details>
+
+<details class="arch-sub" open>
+<summary>模型管理策略 — "全杀"</summary>
+<div class="sub-content">
+<p>加载新模型前先卸载全部已有模型，确保 GPU 内存干净：</p>
+<pre class="code-block"><span class="kw">let</span> _currentModel: <span class="str">'tts'</span> | <span class="str">'voxcpm2'</span> | <span class="kw">null</span> = <span class="kw">null</span>
+
+<span class="kw">async function</span> <span class="fn">ensureModelLoaded</span>(model: <span class="str">'tts'</span> | <span class="str">'voxcpm2'</span>): Promise&lt;<span class="tp">boolean</span>&gt; {
+  <span class="kw">if</span> (_currentModel === model) <span class="kw">return true</span>
+  <span class="kw">await</span> <span class="fn">unloadAll</span>()        <span class="cm">// ← "全杀"：先清场</span>
+  <span class="kw">try</span> {
+    <span class="kw">const</span> loadRes = <span class="kw">await</span> <span class="fn">loadModel</span>({ model })
+    <span class="kw">if</span> (loadRes.data.success) {
+      _currentModel = model
+      <span class="kw">return true</span>
+    }
+    <span class="kw">return false</span>
+  } <span class="kw">catch</span> { <span class="kw">return false</span> }
+}</pre>
+<p>加载完成后自动后台预热：发一次空推理让 MLX 编译计算图，避免用户第一次合成时卡顿。</p>
+</div>
+</details>
+
+<details class="arch-sub" open>
+<summary>原始音频返回模式</summary>
+<div class="sub-content">
+<p>关键合成接口（clone / batchClone / dialogue / voxClone / voxDesign）支持 <code>returnRaw</code> 参数，设为 <code>true</code> 时后端直接返回 WAV 二进制流（<code>save_file: false</code>），前端用 <code>res.arrayBuffer()</code> 处理，适合需要直接操作音频数据的场景。</p>
+</div>
+</details>
+
+</div>
+</details>
+
+<!-- ============================================================ -->
+<details class="arch-section" open>
+<summary>🎛️ Layer 5 — 声音工坊 (SoundWorkshop)</summary>
+<div class="card-content">
+
+<p>基于 <strong>Tone.js 15</strong> 的实时音频效果链编辑器，支持导入已合成的音频做后期处理。</p>
+
+<details class="arch-sub" open>
+<summary>效果链架构</summary>
+<div class="sub-content">
+<div class="flow-diagram"><span class="node">Tone.Player</span>  <span class="arrow">→</span>  [效果节点链]  <span class="arrow">→</span>  <span class="node">Tone.Destination</span>
+
+效果节点（可叠加多个）：
+  ├─ <span class="step">Gain</span>          音量控制
+  ├─ <span class="step">Filter</span>        高通/低通滤波器
+  ├─ <span class="step">Delay</span>         延迟效果
+  ├─ <span class="step">Reverb</span>        混响 (Convolver)
+  ├─ <span class="step">Distortion</span>    失真/过载
+  ├─ <span class="step">PitchShift</span>    变调
+  ├─ <span class="step">Tremolo</span>       颤音
+  ├─ <span class="step">Phaser</span>        移相
+  ├─ <span class="step">Compressor</span>    压缩器
+  ├─ <span class="step">AutoFilter</span>    自动滤波
+  └─ <span class="step">PanVol</span>        声像 + 音量</div>
+</div>
+</details>
+
+<details class="arch-sub" open>
+<summary>链式处理流程</summary>
+<div class="sub-content">
+<p>每次效果列表变化时重建整个效果链：</p>
+<ol>
+<li><code>disposeChain()</code> — 断开所有效果节点</li>
+<li><code>buildChain()</code> — 从 Player 开始逐个连接效果节点</li>
+<li>最后一个节点连接到 <code>Destination</code>（音频输出）</li>
+</ol>
+<p>支持 <strong>预设系统</strong>：保存/加载完整效果链配置（localStorage），内置多个预设如 "人声增强"、"复古电台"、"空旷大厅" 等。</p>
+</div>
+</details>
+
+<details class="arch-sub" open>
+<summary>原生效果桥接</summary>
+<div class="sub-content">
+<p><code>nativeEffects.ts</code> 提供与 Swift/Objective-C 原生音频处理的桥接接口，可将部分计算密集效果（如实时 EQ）卸载到原生层处理，降低 JS 线程负载。</p>
+</div>
+</details>
+
+</div>
+</details>
+
+<!-- ============================================================ -->
+<details class="arch-section" open>
+<summary>🛡️ Layer 6 — 错误处理与反馈链路</summary>
+<div class="card-content">
+
+<details class="arch-sub" open>
+<summary>三层错误捕获</summary>
+<div class="sub-content">
+<ol>
+<li><strong>ErrorBoundary</strong> — React 组件错误边界，捕获渲染过程中抛出的异常</li>
+<li><strong>全局 error 事件</strong> — 监听 <code>window.addEventListener('error')</code>，捕获未处理的 JS 错误和资源加载失败</li>
+<li><strong>全局 unhandledrejection</strong> — 监听未捕获的 Promise reject，捕获异步异常</li>
+</ol>
+</div>
+</details>
+
+<details class="arch-sub" open>
+<summary>日志缓存系统</summary>
+<div class="sub-content">
+<p>启动时劫持 <code>console.log</code>，将日志存入环形缓冲区（上限 300 条），发生错误时自动附带最近 30 条日志：</p>
+<pre class="code-block">;(<span class="kw">function</span>() {
+  <span class="kw">const</span> buffer: string[] = []
+  <span class="kw">const</span> origLog = console.log
+  console.log = <span class="kw">function</span>(...args: any[]) {
+    buffer.push(args.map(a => <span class="kw">typeof</span> a === <span class="str">'object'</span> ? JSON.stringify(a) : String(a)).join(<span class="str">' '</span>))
+    <span class="kw">if</span> (buffer.length > <span class="num">300</span>) buffer.splice(<span class="num">0</span>, buffer.length - <span class="num">300</span>)
+    origLog.apply(console, args)
+  }
+  (<span class="kw">window as any</span>).__consoleLogs__ = buffer
+})()</pre>
+</div>
+</details>
+
+<details class="arch-sub" open>
+<summary>路径脱敏 — <code>sanitizePath()</code></summary>
+<div class="sub-content">
+<p>上报前对所有路径进行脱敏处理，确保用户隐私不被泄漏：</p>
+<ul>
+<li><code>/Users/xxx/.../a/b</code> → <code>/a/b</code></li>
+<li><code>/home/xxx/...</code> → 相对路径</li>
+<li><code>C:\Users\xxx\...</code> → 相对路径</li>
+<li><code>http://localhost:5173/src/xxx</code> → <code>/src/xxx</code></li>
+<li><code>file:///Users/xxx/...</code> → 相对路径</li>
+</ul>
+</div>
+</details>
+
+<details class="arch-sub" open>
+<summary>GitHub Issues 自动上报</summary>
+<div class="sub-content">
+<p>通过 <code>config.ts</code>（已 gitignore）配置 GitHub 凭据：</p>
+<ul>
+<li>Fine-grained Token，权限仅 <code>Issues: Write</code></li>
+<li>Token 不存在时自动弹出浏览器打开 GitHub Issues 新建页（预填标题+正文）</li>
+<li>Token 存在时通过 GitHub API 直接创建 Issue</li>
+<li>自动加 labels：<code>bug</code> / <code>enhancement</code> / <code>feedback</code></li>
+</ul>
+</div>
+</details>
+
+<details class="arch-sub" open>
+<summary>反馈链路</summary>
+<div class="sub-content">
+<div class="flow-diagram"><span class="node">用户操作 / 崩溃</span>
+  → <span class="step">collectFeedback()</span>
+    → <span class="step">sanitizePath()</span> 脱敏
+    → <span class="step">formatIssueBody()</span> 格式化为 Markdown
+  → <span class="step">submitFeedback()</span>
+    ├─ 有 Token → <span class="step">GitHub API POST /issues</span>
+    └─ 无 Token → <span class="step">打开浏览器 Issues/new</span></div>
+</div>
+</details>
+
+</div>
+</details>
+
+<!-- ============================================================ -->
+<details class="arch-section" open>
+<summary>📦 Layer 7 — 构建与分发</summary>
+<div class="card-content">
+
+<details class="arch-sub" open>
+<summary>构建流程</summary>
+<div class="sub-content">
+<div class="flow-diagram"><span class="node">TypeScript 源码</span>
+  → <span class="step">Vite 6</span> (<span class="fn">vite build</span>)
+  → <span class="step">dist/</span> (index.html + JS/CSS bundle)
+  → <span class="step">electron-builder</span>
+    ├─ <span class="node">electron-builder.yml</span>      <span class="cm">→ 离线版</span>
+    │   ├─ extraResources: tts_serve_mlx (含 models)
+    │   └─ artifactName: huisheng-{version}-offline-{arch}.dmg
+    └─ <span class="node">electron-builder.online.yml</span> <span class="cm">→ 在线版</span>
+        ├─ extraResources: tts_serve_mlx (排除 models/)
+        └─ artifactName: huisheng-{version}-online-{arch}.dmg</div>
+</div>
+</details>
+
+<details class="arch-sub" open>
+<summary>离线版 vs 在线版</summary>
+<div class="sub-content">
+<table style="width:100%;border-collapse:collapse;font-size:13px;margin:8px 0;">
+<tr style="border-bottom:1px solid rgba(0,255,255,.15);">
+  <th style="padding:6px 10px;text-align:left;color:var(--neon);">维度</th>
+  <th style="padding:6px 10px;text-align:left;color:var(--neon);">离线版</th>
+  <th style="padding:6px 10px;text-align:left;color:var(--neon);">在线版</th>
+</tr>
+<tr style="border-bottom:1px solid rgba(0,255,255,.08);">
+  <td style="padding:5px 10px;">模型文件</td>
+  <td style="padding:5px 10px;">内嵌在 extraResources</td>
+  <td style="padding:5px 10px;">首次启动从 ModelScope 下载</td>
+</tr>
+<tr style="border-bottom:1px solid rgba(0,255,255,.08);">
+  <td style="padding:5px 10px;">安装包体积</td>
+  <td style="padding:5px 10px;">~5.5 GB</td>
+  <td style="padding:5px 10px;">~80 MB</td>
+</tr>
+<tr style="border-bottom:1px solid rgba(0,255,255,.08);">
+  <td style="padding:5px 10px;">首次启动</td>
+  <td style="padding:5px 10px;">即开即用</td>
+  <td style="padding:5px 10px;">需下载模型（~1.6 GB + ~2.1 GB）</td>
+</tr>
+<tr>
+  <td style="padding:5px 10px;">模型目录</td>
+  <td style="padding:5px 10px;"><code>Resources/tts_serve_mlx/models/</code></td>
+  <td style="padding:5px 10px;"><code>~/Library/Application Support/huisheng/models/</code></td>
+</tr>
+</table>
+</div>
+</details>
+
+<details class="arch-sub" open>
+<summary>目标平台</summary>
+<div class="sub-content">
+<ul>
+<li><strong>macOS</strong> — DMG 安装包，arm64 / x64（当前仅 arm64）</li>
+<li><strong>Windows</strong> — NSIS 安装包（x64）</li>
+<li><strong>Linux</strong> — AppImage</li>
+<li>所有平台共用同一套 Vite build 产物</li>
+</ul>
+</div>
+</details>
+
+<details class="arch-sub" open>
+<summary>GitHub Pages 分发</summary>
+<div class="sub-content">
+<p>发布页 <code>docs/index.html</code> 通过 GitHub Releases API 自动获取版本列表和下载链接：</p>
+<ul>
+<li><code>GET /repos/TalentedPlayerXXC/TTSDesktop/releases</code> → 渲染下载卡片</li>
+<li>明星片 badge：<code>GET /repos/TalentedPlayerXXC/TTSDesktop</code> → stargazers_count</li>
+<li>更新日志：<code>raw.githubusercontent.com</code> 拉取 UPDATE.md 渲染</li>
+<li>选择展示最新版的 .dmg 下载链接在 URL bar 中</li>
+</ul>
+</div>
+</details>
+
+</div>
+</details>
+
+</div>
+
+<div class="footer">
+  <p><a href="https://github.com/TalentedPlayerXXC/TTSDesktop" target="_blank">GitHub 仓库</a> · 绘声 客户端架构 · <a href="index.html">返回发布页</a> · <a href="huisheng-serve.html">查看后端架构</a></p>
+</div>
+
+<script>
+// 代码语法高亮：简单的关键字着色
+document.querySelectorAll('.code-block').forEach(el => {
+  const html = el.innerHTML
+    .replace(/\b(const|let|var|function|return|if|else|for|while|try|catch|throw|new|import|export|from|async|await|typeof|instanceof|this|true|false|null|undefined)\b/g, '<span class="kw">$1</span>')
+    .replace(/\/\/.*/g, '<span class="cm">$&</span>')
+    .replace(/\/\*[\s\S]*?\*\//g, '<span class="cm">$&</span>')
+  el.innerHTML = html
+})
+
+// 获取 GitHub star 数
+async function fetchStars() {
+  try {
+    const res = await fetch('https://api.github.com/repos/TalentedPlayerXXC/TTSDesktop')
+    if (!res.ok) throw new Error()
+    const data = await res.json()
+    document.getElementById('starCount').textContent = data.stargazers_count || 0
+  } catch {
+    document.getElementById('starCount').textContent = '⭐'
+  }
+}
+fetchStars()
+</script>
+</body>
+</html>

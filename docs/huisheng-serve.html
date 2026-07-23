@@ -1,0 +1,969 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>绘声 · TTS-Serve-MLX 后端架构</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<style>
+:root {
+  --bg: #0a0a12;
+  --surface: rgba(18, 18, 40, 0.85);
+  --surface2: rgba(30, 30, 60, 0.7);
+  --border: rgba(0, 255, 255, 0.15);
+  --text: #e0e0f0;
+  --text2: #7a7aaa;
+  --neon: #00ffff;
+  --neon2: #ff00ff;
+  --font: 'SF Mono', 'JetBrains Mono', 'Cascadia Code', monospace;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  min-height: 100vh;
+  position: relative;
+  overflow-x: hidden;
+}
+body::before {
+  content: '';
+  position: fixed; inset: 0; z-index: 0;
+  background-image:
+    linear-gradient(rgba(0,255,255,.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,255,255,.04) 1px, transparent 1px);
+  background-size: 48px 48px;
+  pointer-events: none;
+}
+body::after {
+  content: '';
+  position: fixed; inset: 0; z-index: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent, transparent 2px,
+    rgba(0,255,255,.015) 2px, rgba(0,255,255,.015) 4px
+  );
+  pointer-events: none;
+  animation: scan 8s linear infinite;
+}
+@keyframes scan {
+  0%   { transform: translateY(0); }
+  100% { transform: translateY(4px); }
+}
+.glow-left {
+  position: fixed; left: -200px; top: 20%; z-index: 0;
+  width: 500px; height: 500px;
+  background: radial-gradient(circle, rgba(0,255,255,.06) 0%, transparent 70%);
+  pointer-events: none;
+}
+.glow-right {
+  position: fixed; right: -200px; bottom: 10%; z-index: 0;
+  width: 500px; height: 500px;
+  background: radial-gradient(circle, rgba(255,0,255,.06) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+/* ── top nav ── */
+.top-nav {
+  position: fixed; top: 20px; right: 24px; z-index: 10;
+  display: flex; align-items: center; gap: 6px;
+}
+.top-nav a {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 6px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  text-decoration: none;
+  color: var(--text2);
+  font-size: 13px;
+  transition: all .3s;
+  backdrop-filter: blur(8px);
+  white-space: nowrap;
+}
+.top-nav a:hover {
+    border-color: rgba(0,255,255,.4);
+    color: var(--text);
+    box-shadow: 0 0 16px rgba(0,255,255,.1);
+  }
+  .top-nav .star-badge {
+    padding: 6px 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    text-decoration: none;
+    color: var(--text2);
+    font-size: 13px;
+    transition: all .3s;
+    backdrop-filter: blur(8px);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .top-nav .star-badge:hover {
+    border-color: rgba(255, 215, 0, .5);
+    color: #ffd700;
+    box-shadow: 0 0 16px rgba(255, 215, 0, .1);
+  }
+
+/* ── hero ── */
+.hero {
+  position: relative; z-index: 1;
+  padding: 60px 24px 36px;
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+}
+.hero h1 {
+  font-size: 48px;
+  font-weight: 700;
+  text-shadow: 0 0 20px rgba(0,255,255,.4), 0 0 60px rgba(0,255,255,.15);
+}
+.hero h1 .neon-cyan { color: var(--neon); }
+.hero h1 .neon-pink { color: var(--neon2); text-shadow: 0 0 20px rgba(255,0,255,.4), 0 0 60px rgba(255,0,255,.15); }
+.hero p { color: var(--text); font-size: 15px; margin-top: 8px; }
+.hero .sub { font-size: 13px; color: var(--text); margin-top: 4px; opacity: .7; }
+.hero .desc { font-size: 13px; color: var(--text2); margin-top: 12px; max-width: 520px; margin-left: auto; margin-right: auto; line-height: 1.7; }
+
+/* ── container ── */
+.container {
+  position: relative; z-index: 1;
+  max-width: 860px; margin: 0 auto; padding: 32px 20px 80px;
+}
+
+/* ── details / cards ── */
+details.arch-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  margin-bottom: 20px;
+  transition: border-color .3s;
+  backdrop-filter: blur(6px);
+}
+details.arch-section:hover { border-color: rgba(0,255,255,.25); }
+
+details.arch-section summary {
+  padding: 18px 22px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--neon);
+  user-select: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+details.arch-section summary::-webkit-details-marker { display: none; }
+details.arch-section summary::before {
+  content: '▾';
+  color: var(--text2);
+  font-size: 12px;
+  transition: transform .2s;
+}
+details.arch-section[open] summary::before { transform: rotate(0deg); }
+details.arch-section:not([open]) summary::before { transform: rotate(-90deg); }
+
+details.arch-section .card-content {
+  padding: 0 22px 22px;
+  font-size: 14px;
+  line-height: 1.8;
+}
+details.arch-section .card-content p { margin-bottom: 10px; }
+details.arch-section .card-content ul { padding-left: 20px; margin: 8px 0; }
+details.arch-section .card-content li { margin-bottom: 4px; }
+details.arch-section .card-content strong { color: var(--text); }
+details.arch-section .card-content code {
+  background: rgba(0,255,255,.08);
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 13px;
+  font-family: var(--font);
+}
+details.arch-section .card-content .tag {
+  display: inline-block;
+  background: rgba(0,255,255,.1);
+  color: var(--neon);
+  padding: 1px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+/* ── sub-details ── */
+details.arch-sub {
+  margin: 12px 0;
+  border-left: 2px solid var(--border);
+  padding-left: 14px;
+}
+details.arch-sub summary {
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  color: var(--text);
+  user-select: none;
+}
+details.arch-sub summary::-webkit-details-marker { display: none; }
+details.arch-sub summary::before {
+  content: '▸ ';
+  color: var(--text2);
+}
+details.arch-sub[open] summary::before { content: '▾ '; }
+details.arch-sub .sub-content {
+  padding: 8px 0 4px;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+/* ── SVG container ── */
+.svg-diagram {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 20px;
+  margin: 12px 0;
+  overflow-x: auto;
+  text-align: center;
+}
+.svg-diagram svg { max-width: 100%; height: auto; }
+
+/* ── code blocks ── */
+pre.code-block {
+  background: rgba(0,0,0,.4);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 14px 16px;
+  margin: 10px 0;
+  overflow-x: auto;
+  font-family: var(--font);
+  font-size: 12px;
+  line-height: 1.6;
+  color: #c9d1d9;
+}
+
+/* ── flow ── */
+.flow-diagram {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin: 12px 0;
+  font-family: var(--font);
+  font-size: 12px;
+  line-height: 2;
+  white-space: pre;
+  overflow-x: auto;
+}
+
+/* ── endpoint table ── */
+.endpoint-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  margin: 12px 0;
+}
+.endpoint-table th {
+  padding: 8px 12px;
+  text-align: left;
+  color: var(--neon);
+  border-bottom: 1px solid rgba(0,255,255,.2);
+  font-weight: 600;
+}
+.endpoint-table td {
+  padding: 6px 12px;
+  border-bottom: 1px solid rgba(0,255,255,.06);
+}
+.endpoint-table tr:last-child td { border-bottom: none; }
+.endpoint-table .method {
+  display: inline-block;
+  padding: 1px 7px;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.endpoint-table .method-get { background: rgba(0,255,255,.1); color: var(--neon); }
+.endpoint-table .method-post { background: rgba(255,0,255,.1); color: var(--neon2); }
+.endpoint-table .path { color: var(--text); font-family: var(--font); }
+.endpoint-table .desc { color: var(--text2); }
+.endpoint-table .model-tag {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 3px;
+}
+.endpoint-table .model-none { background: rgba(122,122,170,.15); color: var(--text2); }
+.endpoint-table .model-tts { background: rgba(0,255,255,.12); color: var(--neon); }
+.endpoint-table .model-vox { background: rgba(255,0,255,.12); color: var(--neon2); }
+
+/* ── footer ── */
+.footer {
+  position: relative; z-index: 1;
+  text-align: center; padding: 40px 20px; color: var(--text2); font-size: 12px;
+  border-top: 1px solid var(--border);
+}
+.footer a { color: var(--neon); text-decoration: none; }
+.footer a:hover { text-decoration: underline; }
+
+@media (max-width: 700px) {
+  .hero h1 { font-size: 30px; }
+  .top-nav { right: 12px; top: 12px; flex-wrap: wrap; justify-content: flex-end; }
+  .top-nav a { font-size: 11px; padding: 4px 8px; }
+}
+</style>
+</head>
+<body>
+
+<div class="glow-left"></div>
+<div class="glow-right"></div>
+
+<div class="top-nav">
+  <a href="index.html">🏠 发布页</a>
+  <a href="huisheng-client.html">📐 前端架构</a>
+  <a class="star-badge" href="https://github.com/TalentedPlayerXXC/TTSDesktop" target="_blank">
+    <span class="star-icon">⭐</span>
+    <span class="star-count" id="starCount">-</span>
+  </a>
+</div>
+
+<div class="hero">
+  <h1><span class="neon-cyan">绘</span><span class="neon-pink">声</span> <span style="font-size:20px;color:var(--text2);">· TTS-Serve-MLX 后端架构</span></h1>
+  <p>FastAPI + MLX 语音合成推理引擎</p>
+  <div class="sub">Apple Silicon 本地推理 · 双模型支持 · PyInstaller 打包</div>
+  <p class="desc">基于 FastAPI 构建的高性能语音合成后端，通过 MLX 框架在 Apple Silicon 上运行 Qwen3-TTS 和 VoxCPM2 模型。作为 Electron 子进程运行，提供 RESTful API 服务。</p>
+</div>
+
+<div class="container">
+
+<!-- ============================================================ -->
+<details class="arch-section" open>
+<summary>🏗️ 整体架构总览</summary>
+<div class="card-content">
+
+<p>TTS-Serve-MLX 是一个 <strong>FastAPI</strong> 应用，通过 <strong>uvicorn</strong> 启动，作为 Electron 主进程的子进程运行。采用模块化设计，分为 API 层、模型管理层和音频推理层。</p>
+
+<div class="svg-diagram">
+<svg viewBox="0 0 760 400" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="gApi" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#0a2a4a"/><stop offset="100%" stop-color="#0a1a2a"/></linearGradient>
+    <linearGradient id="gModel" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#2a1a3a"/><stop offset="100%" stop-color="#1a0a2a"/></linearGradient>
+    <linearGradient id="gAudio" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#0a2a2a"/><stop offset="100%" stop-color="#0a1a1a"/></linearGradient>
+  </defs>
+
+  <!-- Client column -->
+  <rect x="20" y="30" width="120" height="340" rx="8" fill="rgba(18,18,40,.6)" stroke="#ff00ff" stroke-width="1.5" stroke-opacity=".4"/>
+  <text x="80" y="55" text-anchor="middle" fill="#ff00ff" font-size="11" font-weight="600">Electron</text>
+  <text x="80" y="72" text-anchor="middle" fill="#7a7aaa" font-size="10">渲染进程</text>
+
+  <line x1="60" y1="85" x2="60" y2="350" stroke="#ff00ff" stroke-width=".5" stroke-opacity=".2" stroke-dasharray="3,3"/>
+  <text x="80" y="100" text-anchor="middle" fill="#c9d1d9" font-size="10">TTSComponent</text>
+  <text x="80" y="116" text-anchor="middle" fill="#c9d1d9" font-size="10">TTSComponentBeta</text>
+  <text x="80" y="132" text-anchor="middle" fill="#c9d1d9" font-size="10">VoiceDesign</text>
+  <text x="80" y="148" text-anchor="middle" fill="#c9d1d9" font-size="10">SoundWorkshop</text>
+  <text x="80" y="164" text-anchor="middle" fill="#c9d1d9" font-size="10">Settings</text>
+  <text x="80" y="200" text-anchor="middle" fill="#c9d1d9" font-size="10">↓</text>
+  <text x="80" y="220" text-anchor="middle" fill="#7a7aaa" font-size="10">Axios / Fetch</text>
+  <text x="80" y="240" text-anchor="middle" fill="#c9d1d9" font-size="10">HTTP localhost</text>
+
+  <!-- API Layer -->
+  <rect x="170" y="20" width="220" height="350" rx="8" fill="url(#gApi)" stroke="#00ffff" stroke-width="1.5" stroke-opacity=".5"/>
+  <text x="280" y="45" text-anchor="middle" fill="#00ffff" font-size="12" font-weight="600">FastAPI 应用层</text>
+  <text x="280" y="62" text-anchor="middle" fill="#7a7aaa" font-size="10">uvicorn 运行</text>
+
+  <line x1="190" y1="75" x2="190" y2="355" stroke="#00ffff" stroke-width=".5" stroke-opacity=".2" stroke-dasharray="3,3"/>
+  <text x="280" y="80" text-anchor="middle" fill="#c9d1d9" font-size="10">CORS 中间件</text>
+  <text x="280" y="96" text-anchor="middle" fill="#c9d1d9" font-size="10">Origin/Referer 安全检查</text>
+  <text x="280" y="120" text-anchor="middle" fill="#7a7aaa" font-size="11">───────────────</text>
+  <text x="280" y="140" text-anchor="middle" fill="#c9d1d9" font-size="10">GET /health 健康检查</text>
+  <text x="280" y="156" text-anchor="middle" fill="#c9d1d9" font-size="10">POST /model/load|unload</text>
+  <text x="280" y="172" text-anchor="middle" fill="#c9d1d9" font-size="10">POST /clone 语音克隆</text>
+  <text x="280" y="188" text-anchor="middle" fill="#c9d1d9" font-size="10">POST /batch-clone 批量</text>
+  <text x="280" y="204" text-anchor="middle" fill="#c9d1d9" font-size="10">POST /dialogue 对话</text>
+  <text x="280" y="220" text-anchor="middle" fill="#c9d1d9" font-size="10">POST /vox/clone|design</text>
+  <text x="280" y="236" text-anchor="middle" fill="#c9d1d9" font-size="10">POST /stt 语音识别</text>
+  <text x="280" y="252" text-anchor="middle" fill="#c9d1d9" font-size="10">GET /cache|cleanup</text>
+  <text x="280" y="268" text-anchor="middle" fill="#c9d1d9" font-size="10">GET /files 文件管理</text>
+
+  <!-- Model Manager -->
+  <rect x="420" y="20" width="160" height="170" rx="8" fill="url(#gModel)" stroke="#ff00ff" stroke-width="1.5" stroke-opacity=".5"/>
+  <text x="500" y="45" text-anchor="middle" fill="#ff00ff" font-size="12" font-weight="600">模型管理层</text>
+  <text x="435" y="65" fill="#c9d1d9" font-size="10">• 双模型互斥（二选一）</text>
+  <text x="435" y="83" fill="#c9d1d9" font-size="10">• threading.Lock 并发保护</text>
+  <text x="435" y="101" fill="#c9d1d9" font-size="10">• gc 回收 + mx.clear_cache</text>
+  <text x="435" y="119" fill="#c9d1d9" font-size="10">• 按需加载（不预载）</text>
+  <text x="435" y="145" fill="#7a7aaa" font-size="11">───────────────</text>
+  <text x="435" y="165" fill="#c9d1d9" font-size="10">Qwen3-TTS 0.6B  ← 加载</text>
+  <text x="435" y="181" fill="#c9d1d9" font-size="10">VoxCPM2 2B       → 卸载</text>
+
+  <!-- Audio Engine -->
+  <rect x="420" y="210" width="160" height="160" rx="8" fill="url(#gAudio)" stroke="#00ffff" stroke-width="1.5" stroke-opacity=".5"/>
+  <text x="500" y="235" text-anchor="middle" fill="#00ffff" font-size="12" font-weight="600">音频推理层</text>
+  <text x="500" y="255" text-anchor="middle" fill="#7a7aaa" font-size="10">mlx_audio</text>
+  <text x="435" y="275" fill="#c9d1d9" font-size="10">• TTSClone (Speaker/ICL)</text>
+  <text x="435" y="293" fill="#c9d1d9" font-size="10">• 批量推理 (原生 batch)</text>
+  <text x="435" y="311" fill="#c9d1d9" font-size="10">• 逐条生成 (各异 ref)</text>
+  <text x="435" y="329" fill="#c9d1d9" font-size="10">• 后处理 (归一化/淡入淡出)</text>
+  <text x="435" y="347" fill="#c9d1d9" font-size="10">• WAV 保存 / 返回流</text>
+
+  <!-- Arrows -->
+  <line x1="140" y1="130" x2="170" y2="130" stroke="#00ffff" stroke-width="1.5" stroke-opacity=".5"/>
+  <line x1="390" y1="100" x2="420" y2="100" stroke="#ff00ff" stroke-width="1.5" stroke-opacity=".4"/>
+  <line x1="390" y1="280" x2="420" y2="280" stroke="#00ffff" stroke-width="1.5" stroke-opacity=".4"/>
+
+  <!-- Legend -->
+  <rect x="610" y="20" width="130" height="100" rx="6" fill="rgba(18,18,40,.7)" stroke="rgba(0,255,255,.1)" stroke-width="1"/>
+  <text x="620" y="40" fill="#7a7aaa" font-size="10" font-weight="600">技术栈</text>
+  <text x="620" y="56" fill="#c9d1d9" font-size="10">▸ FastAPI + uvicorn</text>
+  <text x="620" y="72" fill="#c9d1d9" font-size="10">▸ MLX + mlx_audio</text>
+  <text x="620" y="88" fill="#c9d1d9" font-size="10">▸ PyInstaller</text>
+  <text x="620" y="104" fill="#c9d1d9" font-size="10">▸ Python 3.14</text>
+</svg>
+</div>
+
+</div>
+</details>
+
+<!-- ============================================================ -->
+<details class="arch-section" open>
+<summary>🚀 Layer 1 — 启动入口 (<code>server_main.py</code>)</summary>
+<div class="card-content">
+
+<p>作为独立可执行文件运行，同时适配 Python 直接运行和 PyInstaller 打包模式：</p>
+
+<details class="arch-sub" open>
+<summary>端口发现机制</summary>
+<div class="sub-content">
+<pre class="code-block"><span class="cm"># 优先 8000-8050 范围找空闲端口</span>
+<span class="kw">def</span> _find_free_port() -> int:
+    <span class="kw">for</span> port <span class="kw">in</span> range(<span class="num">8000</span>, <span class="num">8051</span>):
+        <span class="kw">with</span> socket.socket(socket.AF_INET, socket.SOCK_STREAM) <span class="kw">as</span> s:
+            <span class="kw">try</span>:
+                s.bind((<span class="str">'127.0.0.1'</span>, port))
+                <span class="kw">return</span> port
+            <span class="kw">except</span> OSError:
+                <span class="kw">continue</span>
+    <span class="cm"># 范围内全满，让 OS 分配</span>
+    <span class="kw">with</span> socket.socket(socket.AF_INET, socket.SOCK_STREAM) <span class="kw">as</span> s:
+        s.bind((<span class="str">'127.0.0.1'</span>, <span class="num">0</span>))
+        <span class="kw">return</span> s.getsockname()[<span class="num">1</span>]
+
+<span class="kw">def</span> main():
+    port = int(os.environ[<span class="str">"TTS_SERVE_PORT"</span>]) <span class="kw">if</span> <span class="str">"TTS_SERVE_PORT"</span> <span class="kw">in</span> os.environ <span class="kw">else</span> _find_free_port()
+    <span class="kw">print</span>(<span class="str">f"TTS_SERVER_PORT={port}"</span>, flush=<span class="kw">True</span>)  <span class="cm"># ← Electron 主进程抓 stdout 解析</span>
+    uvicorn.run(<span class="str">"api:app"</span>, host=host, port=port, ...)</pre>
+</div>
+</details>
+
+<details class="arch-sub" open>
+<summary>环境变量配置</summary>
+<div class="sub-content">
+<table style="width:100%;border-collapse:collapse;font-size:12px;margin:8px 0;">
+  <tr style="border-bottom:1px solid rgba(0,255,255,.15);">
+    <th style="padding:6px 10px;text-align:left;color:var(--neon);">变量</th>
+    <th style="padding:6px 10px;text-align:left;color:var(--neon);">说明</th>
+    <th style="padding:6px 10px;text-align:left;color:var(--neon);">默认值</th>
+  </tr>
+  <tr style="border-bottom:1px solid rgba(0,255,255,.08);">
+    <td style="padding:5px 10px;"><code>TTS_SERVE_HOST</code></td>
+    <td style="padding:5px 10px;">监听地址</td>
+    <td style="padding:5px 10px;">127.0.0.1</td>
+  </tr>
+  <tr style="border-bottom:1px solid rgba(0,255,255,.08);">
+    <td style="padding:5px 10px;"><code>TTS_SERVE_PORT</code></td>
+    <td style="padding:5px 10px;">指定端口（不设则自动发现）</td>
+    <td style="padding:5px 10px;">8000-8050 自动</td>
+  </tr>
+  <tr style="border-bottom:1px solid rgba(0,255,255,.08%);">
+    <td style="padding:5px 10px;"><code>TTS_SERVE_MODELS_DIR</code></td>
+    <td style="padding:5px 10px;">模型文件目录</td>
+    <td style="padding:5px 10px;">./models</td>
+  </tr>
+  <tr>
+    <td style="padding:5px 10px;"><code>TTS_SERVE_LOG_LEVEL</code></td>
+    <td style="padding:5px 10px;">日志级别</td>
+    <td style="padding:5px 10px;">warning</td>
+  </tr>
+</table>
+</div>
+</details>
+
+<details class="arch-sub" open>
+<summary>启动流程</summary>
+<div class="sub-content">
+<ol>
+<li><strong>Electron 主进程</strong> spawn tts_serve_mlx 二进制</li>
+<li>后端打印 <code>TTS_SERVER_PORT=xxxxx</code> 到 stdout</li>
+<li>Electron 解析端口号，存入 <code>ACTUAL_PORT</code></li>
+<li>Electron 轮询 <code>GET /health</code>（500ms 间隔，120s 超时）</li>
+<li>服务就绪 → Electron 创建窗口</li>
+</ol>
+</div>
+</details>
+
+</div>
+</details>
+
+<!-- ============================================================ -->
+<details class="arch-section" open>
+<summary>🛡️ Layer 2 — API 中间件</summary>
+<div class="card-content">
+
+<details class="arch-sub" open>
+<summary>CORS 中间件</summary>
+<div class="sub-content">
+<p>允许所有 origins（Electron 渲染进程的 file:// 协议需要）：</p>
+<pre class="code-block">app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[<span class="str">"*"</span>],
+    allow_credentials=<span class="kw">True</span>,
+    allow_methods=[<span class="str">"*"</span>],
+    allow_headers=[<span class="str">"*"</span>],
+)</pre>
+</div>
+</details>
+
+<details class="arch-sub" open>
+<summary>Origin/Referer 安全检查</summary>
+<div class="sub-content">
+<p>自定义中间件，在 GPU 推理接口前拦截非本机来源请求，防止恶意网站绕过 CORS 调用接口消耗 GPU 资源：</p>
+<ul>
+<li><strong>放行路径</strong>：<code>/health</code>、<code>/docs</code>、<code>/openapi.json</code>、<code>/model/download/status</code>（不消耗 GPU）</li>
+<li><strong>放行来源</strong>：无来源（curl/Electron 主进程）、<code>null</code>（Electron file://）、localhost/127.0.0.1</li>
+<li><strong>拒绝</strong>：其他来源 → 403</li>
+</ul>
+</div>
+</details>
+
+</div>
+</details>
+
+<!-- ============================================================ -->
+<details class="arch-section" open>
+<summary>🧠 Layer 3 — 模型管理层 (<code>api.py</code>)</summary>
+<div class="card-content">
+
+<details class="arch-sub" open>
+<summary>双模型互斥</summary>
+<div class="sub-content">
+<p>因为 Apple Silicon 的 GPU 显存有限，两台模型采用互斥加载策略：加载新模型时自动卸载当前的：</p>
+<pre class="code-block">@app.post(<span class="str">"/model/load"</span>)
+<span class="kw">async def</span> model_load(request: ModelLoadRequest):
+    <span class="kw">if</span> request.model == <span class="str">"tts"</span>:
+        unload_vox()       <span class="cm"># ← 自动卸载 VoxCPM2</span>
+        load_qwen3()       <span class="cm"># ← 加载 Qwen3-TTS</span>
+    <span class="kw">elif</span> request.model == <span class="str">"voxcpm2"</span>:
+        unload_qwen3()     <span class="cm"># ← 自动卸载 Qwen3</span>
+        load_vox()         <span class="cm"># ← 加载 VoxCPM2</span></pre>
+</div>
+</details>
+
+<details class="arch-sub" open>
+<summary>线程安全加载锁</summary>
+<div class="sub-content">
+<pre class="code-block">_model_lock = threading.Lock()
+
+<span class="kw">def</span> load_qwen3():
+    <span class="kw">global</span> _qwen_tts
+    <span class="kw">with</span> _model_lock:
+        <span class="kw">if</span> _qwen_tts <span class="kw">is not</span> <span class="kw">None</span>:
+            <span class="kw">return</span>  <span class="cm"># 已加载，跳过</span>
+        instance = TTSClone(model_path=TTS_MODEL_PATH)
+        _ = instance.model  <span class="cm"># 触发热加载，失败时抛异常</span>
+        _qwen_tts = instance</pre>
+<p>失败安全设计：只有模型完全加载成功后才赋值给全局变量，失败时 <code>_qwen_tts</code> 保持 <code>None</code>。</p>
+</div>
+</details>
+
+<details class="arch-sub" open>
+<summary>GPU 内存管理</summary>
+<div class="sub-content">
+<pre class="code-block"><span class="kw">def</span> unload_qwen3():
+    <span class="kw">global</span> _qwen_tts
+    <span class="kw">with</span> _model_lock:
+        <span class="kw">if</span> _qwen_tts:
+            _qwen_tts.unload()
+            _qwen_tts = <span class="kw">None</span>
+        gc.collect()                <span class="cm"># Python GC</span>
+        mx.set_cache_limit(<span class="num">0</span>)     <span class="cm"># 清空 MLX 缓存</span>
+        mx.clear_cache()            <span class="cm"># 释放显存</span></pre>
+<p>支持 "全杀"模式：不传模型参数时一次性卸载所有模型：</p>
+<pre class="code-block">@app.post(<span class="str">"/model/unload"</span>)
+<span class="kw">async def</span> model_unload(request: ModelUnloadRequest = <span class="kw">None</span>):
+    <span class="kw">if</span> request <span class="kw">is None or</span> request.model <span class="kw">is None</span>:
+        unload_qwen3()
+        unload_vox()
+        <span class="kw">return</span> {<span class="str">"action"</span>: <span class="str">"unloaded"</span>, <span class="str">"model"</span>: <span class="str">"all"</span>}</pre>
+</div>
+</details>
+
+<details class="arch-sub" open>
+<summary>按需加载策略</summary>
+<div class="sub-content">
+<p>应用启动时不预载任何模型，由前端通过 <code>POST /model/load</code> 触发加载。加载完成后，Electron 主进程自动发送空推理请求预热模型（让 MLX 编译计算图），减少用户首次合成的延迟。</p>
+</div>
+</details>
+
+<details class="arch-sub" open>
+<summary>模型信息与下载</summary>
+<div class="sub-content">
+<p>内置模型信息字典 <code>_MODEL_SOURCES</code>，包含：</p>
+<table style="width:100%;border-collapse:collapse;font-size:12px;margin:8px 0;">
+  <tr style="border-bottom:1px solid rgba(0,255,255,.15);">
+    <th style="padding:6px 10px;text-align:left;color:var(--neon);">模型</th>
+    <th style="padding:6px 10px;text-align:left;color:var(--neon);">大小</th>
+    <th style="padding:6px 10px;text-align:left;color:var(--neon);">来源</th>
+    <th style="padding:6px 10px;text-align:left;color:var(--neon);">用途</th>
+  </tr>
+  <tr><td style="padding:5px 10px;">Qwen3-TTS 0.6B (4-bit)</td><td style="padding:5px 10px;">~1.6 GB</td><td style="padding:5px 10px;">MLX Community</td><td style="padding:5px 10px;">语音克隆、批量、对话</td></tr>
+  <tr><td style="padding:5px 10px;">VoxCPM2 2B (4-bit)</td><td style="padding:5px 10px;">~2.1 GB</td><td style="padding:5px 10px;">MLX Community</td><td style="padding:5px 10px;">情感克隆、声音设计</td></tr>
+</table>
+<p>模型下载支持双源切换（<code>modelscope</code> / <code>huggingface</code>），异步后台线程下载，通过 <code>GET /model/download/status/{model}</code> 查询进度。</p>
+</div>
+</details>
+
+</div>
+</details>
+
+<!-- ============================================================ -->
+<details class="arch-section" open>
+<summary>🎵 Layer 4 — 音频管线 (<code>tts_clone.py</code>)</summary>
+<div class="card-content">
+
+<details class="arch-sub" open>
+<summary>TTSClone 类</summary>
+<div class="sub-content">
+<p>基于 <code>mlx_audio.tts.utils.load_model</code> 封装的语音合成引擎：</p>
+<ul>
+<li><strong>Speaker Embedding 模式</strong>：仅传 <code>ref_audio</code>，模型自动提取音色特征</li>
+<li><strong>ICL 模式</strong>：传 <code>ref_audio</code> + <code>ref_text</code>，通过上下文学习还原情感风格，效果更好</li>
+</ul>
+</div>
+</details>
+
+<details class="arch-sub" open>
+<summary>批量推理策略</summary>
+<div class="sub-content">
+<p>根据输入特点选择最优路径：</p>
+<ul>
+<li><strong>原生 batch</strong>：所有 items 用同一个 <code>ref_audio</code> + 都传了 <code>ref_text</code> + 不流式 → 走 <code>model.batch_generate()</code></li>
+<li><strong>逐条生成</strong>：各 item 用不同 <code>ref_audio</code> 时逐条调用 <code>generate()</code>，带音频读取缓存（避免重复读盘）</li>
+</ul>
+</div>
+</details>
+
+<details class="arch-sub" open>
+<summary>音频后处理</summary>
+<div class="sub-content">
+<pre class="code-block"><span class="kw">def</span> save_audio(audio_array, output_path, sample_rate=<span class="num">24000</span>):
+    <span class="cm"># 1. 归一化 + 削波处理</span>
+    <span class="cm"># 2. 淡入淡出 (fade_in=240samples, fade_out=480samples)</span>
+    <span class="cm"># 3. 合并时可选交叉淡入淡出拼接 + 可配段落间隔</span>
+    <span class="cm"># 4. 保存为 16-bit WAV 格式</span></pre>
+</div>
+</details>
+
+<details class="arch-sub" open>
+<summary>VoxCPM2 管线</summary>
+<div class="sub-content">
+<p>VoxCPM2 推理结果 48kHz 采样率，支持两个独立端点：</p>
+<ul>
+<li><strong><code>/vox/clone</code></strong> — 情感克隆：需要参考音频，支持 ref_text + instruct</li>
+<li><strong><code>/vox/design</code></strong> — 声音设计：零样本，仅凭 instruct 描述词（如"御姐声线"）+ 文本生成，无需参考音频</li>
+</ul>
+<p>可调参数：<code>inference_timesteps</code>（默认 6，范围 1-10）、<code>cfg_value</code>（默认 4.0，范围 0.5-5.0）</p>
+</div>
+</details>
+
+</div>
+</details>
+
+<!-- ============================================================ -->
+<details class="arch-section" open>
+<summary>📡 Layer 5 — API 端点一览</summary>
+<div class="card-content">
+
+<table class="endpoint-table">
+  <tr>
+    <th>方法</th>
+    <th>路径</th>
+    <th>功能</th>
+    <th>模型</th>
+  </tr>
+  <tr>
+    <td><span class="method method-get">GET</span></td>
+    <td class="path">/health</td>
+    <td class="desc">健康检查 + 各模型加载状态</td>
+    <td><span class="model-tag model-none">无</span></td>
+  </tr>
+  <tr>
+    <td><span class="method method-get">GET</span></td>
+    <td class="path">/model/status</td>
+    <td class="desc">模型加载状态</td>
+    <td><span class="model-tag model-none">无</span></td>
+  </tr>
+  <tr>
+    <td><span class="method method-get">GET</span></td>
+    <td class="path">/model-info</td>
+    <td class="desc">模型路径 + 加载状态</td>
+    <td><span class="model-tag model-none">无</span></td>
+  </tr>
+  <tr>
+    <td><span class="method method-get">GET</span></td>
+    <td class="path">/models-info</td>
+    <td class="desc">模型信息 + 是否已下载</td>
+    <td><span class="model-tag model-none">无</span></td>
+  </tr>
+  <tr>
+    <td><span class="method method-post">POST</span></td>
+    <td class="path">/model/load</td>
+    <td class="desc">加载模型 (tts/voxcpm2，互斥)</td>
+    <td><span class="model-tag model-none">无</span></td>
+  </tr>
+  <tr>
+    <td><span class="method method-post">POST</span></td>
+    <td class="path">/model/unload</td>
+    <td class="desc">卸载模型（不传参数=全部卸载）</td>
+    <td><span class="model-tag model-none">无</span></td>
+  </tr>
+  <tr>
+    <td><span class="method method-post">POST</span></td>
+    <td class="path">/model/download</td>
+    <td class="desc">异步下载模型（ModelScope/HF）</td>
+    <td><span class="model-tag model-none">无</span></td>
+  </tr>
+  <tr>
+    <td><span class="method method-get">GET</span></td>
+    <td class="path">/model/download/status/{model}</td>
+    <td class="desc">模型下载进度</td>
+    <td><span class="model-tag model-none">无</span></td>
+  </tr>
+  <tr>
+    <td><span class="method method-post">POST</span></td>
+    <td class="path">/clone</td>
+    <td class="desc">语音克隆（Qwen3-TTS）</td>
+    <td><span class="model-tag model-tts">Qwen3</span></td>
+  </tr>
+  <tr>
+    <td><span class="method method-post">POST</span></td>
+    <td class="path">/batch-clone</td>
+    <td class="desc">批量配音（可选合并为单文件）</td>
+    <td><span class="model-tag model-tts">Qwen3</span></td>
+  </tr>
+  <tr>
+    <td><span class="method method-post">POST</span></td>
+    <td class="path">/dialogue</td>
+    <td class="desc">多角色对话生成</td>
+    <td><span class="model-tag model-tts">Qwen3</span></td>
+  </tr>
+  <tr>
+    <td><span class="method method-post">POST</span></td>
+    <td class="path">/vox/clone</td>
+    <td class="desc">VoxCPM2 情感克隆（参考音频）</td>
+    <td><span class="model-tag model-vox">VoxCPM2</span></td>
+  </tr>
+  <tr>
+    <td><span class="method method-post">POST</span></td>
+    <td class="path">/vox/design</td>
+    <td class="desc">VoxCPM2 声音设计（零样本）</td>
+    <td><span class="model-tag model-vox">VoxCPM2</span></td>
+  </tr>
+  <tr>
+    <td><span class="method method-post">POST</span></td>
+    <td class="path">/stt</td>
+    <td class="desc">语音转文本</td>
+    <td><span class="model-tag model-none">—</span></td>
+  </tr>
+  <tr>
+    <td><span class="method method-get">GET</span></td>
+    <td class="path">/files</td>
+    <td class="desc">文件列表（分页：limit/offset）</td>
+    <td><span class="model-tag model-none">无</span></td>
+  </tr>
+  <tr>
+    <td><span class="method method-get">GET</span></td>
+    <td class="path">/files/{filename}</td>
+    <td class="desc">获取生成的文件</td>
+    <td><span class="model-tag model-none">无</span></td>
+  </tr>
+  <tr>
+    <td><span class="method method-get">GET</span></td>
+    <td class="path">/cache</td>
+    <td class="desc">缓存状态（文件数/大小/最旧文件）</td>
+    <td><span class="model-tag model-none">无</span></td>
+  </tr>
+  <tr>
+    <td><span class="method method-post">POST</span></td>
+    <td class="path">/cleanup</td>
+    <td class="desc">三种清理模式：all/older_than/by_size</td>
+    <td><span class="model-tag model-none">无</span></td>
+  </tr>
+</table>
+
+<details class="arch-sub" open>
+<summary>典型请求流程 — 语音克隆</summary>
+<div class="sub-content">
+<div class="flow-diagram"><span class="cm">用户点击"合成"</span>
+  → Frontend: ensureModelLoaded('tts')
+     → POST /model/load {model: "tts"}
+        → unload_vox()
+        → load_qwen3() → TTSClone(model_path)
+     → 后台预热: POST /clone {text: '', ref_audio: ''}
+  → Frontend: POST /clone {text, ref_audio}
+     → require_qwen3()
+     → _validate_audio_path(ref_audio)
+     → _qwen_tts.generate(text, ref_audio[, ref_text])
+        → mlx_audio 推理 → numpy array
+     → save_audio(audio) → /output/clone_xxxx.wav
+     → return {audio_url: "/output/clone_xxxx.wav"}
+  → Frontend: AudioPlayer(getOutputUrl(audio_url))</div>
+</div>
+</details>
+
+<details class="arch-sub" open>
+<summary>原始音频返回模式</summary>
+<div class="sub-content">
+<p>传 <code>save_file: false</code> 时后端直接返回 WAV 二进制流（<code>media_type="audio/wav"</code>），前端用 <code>arrayBuffer</code> 处理，适合流式或实时处理场景。</p>
+</div>
+</details>
+
+</div>
+</details>
+
+<!-- ============================================================ -->
+<details class="arch-section" open>
+<summary>📥 Layer 6 — 模型下载系统</summary>
+<div class="card-content">
+
+<details class="arch-sub" open>
+<summary>异步下载</summary>
+<div class="sub-content">
+<p>模型下载在后台线程中运行，不阻塞 API 请求：</p>
+<ul>
+<li>请求 <code>POST /model/download</code> → 启动后台线程 → 立即返回</li>
+<li>轮询 <code>GET /model/download/status/{model}</code> 查进度（<code>{status, progress, message}</code>）</li>
+<li>流式写入，8MB 块大小</li>
+<li>按字节加权计算整体进度</li>
+<li>完成/失败后 30s 自动清理任务记录</li>
+</ul>
+</div>
+</details>
+
+<details class="arch-sub" open>
+<summary>双源支持 + SSL 降级</summary>
+<div class="sub-content">
+<pre class="code-block"><span class="kw">if</span> source == <span class="str">"modelscope"</span>:
+    base_url = <span class="str">f"https://modelscope.cn/models/{model_id}/resolve/main"</span>
+<span class="kw">else</span>:
+    base_url = <span class="str">f"https://huggingface.co/{model_id}/resolve/main"</span>
+
+<span class="cm"># SSL 降级兜底：CA 证书验证失败时自动降级</span>
+<span class="kw">try</span>:
+    resp = urllib.request.urlopen(req, context=_ssl_ctx)
+<span class="kw">except</span> urllib.error.URLError <span class="kw">as</span> e:
+    <span class="kw">if</span> <span class="str">"CERTIFICATE_VERIFY_FAILED"</span> <span class="kw">in</span> str(e):
+        <span class="cm"># macOS CA 证书不全时降级</span>
+        resp = urllib.request.urlopen(req, context=ssl._create_unverified_context())</pre>
+</div>
+</details>
+
+</div>
+</details>
+
+<!-- ============================================================ -->
+<details class="arch-section" open>
+<summary>🔒 Layer 7 — 安全设计</summary>
+<div class="card-content">
+
+<details class="arch-sub" open>
+<summary>路径遍历防护</summary>
+<div class="sub-content">
+<pre class="code-block"><span class="kw">def</span> _validate_audio_path(audio_path: str) -> Path:
+    raw = Path(audio_path)
+    normed = os.path.normpath(audio_path)
+    p = Path(normed).resolve()
+    <span class="kw">if</span> <span class="str">'..'</span> <span class="kw">in</span> raw.parts:           <span class="cm"># ← 检查原始路径中的 ..</span>
+        <span class="kw">if not</span> str(p).startswith(str(Path.cwd()) + os.sep):
+            <span class="kw">raise</span> HTTPException(<span class="num">400</span>, <span class="str">"拒绝访问受保护路径之外的音频文件"</span>)
+    <span class="kw">return</span> p
+
+<span class="kw">def</span> _validate_filename(filename: str) -> str:
+    <span class="kw">if</span> <span class="str">'/'</span> <span class="kw">in</span> filename <span class="kw">or</span> <span class="str">'\\'</span> <span class="kw">in</span> filename <span class="kw">or</span> filename.startswith(<span class="str">'.'</span>):
+        <span class="kw">raise</span> HTTPException(<span class="num">400</span>, <span class="str">"无效的文件名"</span>)</pre>
+</div>
+</details>
+
+<details class="arch-sub" open>
+<summary>三层安全模型</summary>
+<div class="sub-content">
+<ol>
+<li><strong>网络层</strong>：只监听 127.0.0.1，不暴露到局域网/公网</li>
+<li><strong>HTTP 中间件层</strong>：Origin/Referer 校验，非本机来源阻止 GPU 推理</li>
+<li><strong>应用层</strong>：路径遍历防护 + 文件名校验</li>
+</ol>
+</div>
+</details>
+
+</div>
+</details>
+
+<!-- ============================================================ -->
+<details class="arch-section" open>
+<summary>📦 Layer 8 — 打包部署 (PyInstaller)</summary>
+<div class="card-content">
+
+<details class="arch-sub" open>
+<summary>打包流程</summary>
+<div class="sub-content">
+<div class="flow-diagram"><span class="cm">build.sh</span>
+  [1/5] 检查 Python 依赖 (fastapi, uvicorn, soundfile, mlx, mlx_audio)
+  [2/5] 检查 libsndfile (自动定位 /opt/homebrew/lib/)
+  [3/5] 检查模型文件（仅验证存在，不打包）
+  [4/5] 清理旧构建 (rm -rf build/ dist/)
+  [5/5] PyInstaller onedir 模式打包
+  └─ 创建空 models/ 目录 + README 说明
+
+<span class="cm">产物结构</span>
+  dist/tts_serve_mlx/
+    ├── tts_serve_mlx          <span class="cm">← 可执行文件</span>
+    ├── _internal/              <span class="cm">← Python 运行时</span>
+    └── models/
+        ├── qwenTTS_0.6B_MLX/  <span class="cm">← 空壳，需用户放置模型</span>
+        ├── voxCPM2_4bit_MLX/  <span class="cm">← 空壳，需用户放置模型</span>
+        └── README.txt</div>
+</div>
+</details>
+
+<details class="arch-sub" open>
+<summary>PyInstaller 集成要点</summary>
+<div class="sub-content">
+<ul>
+<li>打包前清 <code>PYTHONPATH</code>，防止混入不兼容的包（如其他 venv 的 pydantic_core）</li>
+<li>模型文件不打包（体积太大），通过 <code>TTS_SERVE_MODELS_DIR</code> 环境变量指定路径</li>
+<li>Electron 打包时通过 <code>extraResources</code> 将 <code>tts_serve_mlx</code> 目录嵌入 app</li>
+<li>离线版包含模型文件，在线版排除</li>
+</ul>
+</div>
+</details>
+
+</div>
+</details>
+
+</div>
+
+<div class="footer">
+  <p><a href="https://github.com/TalentedPlayerXXC/TTSDesktop" target="_blank">GitHub 仓库</a> · 绘声 TTS-Serve-MLX 后端架构 · <a href="index.html">返回发布页</a> · <a href="huisheng-client.html">查看前端架构</a></p>
+</div>
+
+<script>
+// 获取 GitHub star 数
+async function fetchStars() {
+  try {
+    const res = await fetch('https://api.github.com/repos/TalentedPlayerXXC/TTSDesktop')
+    if (!res.ok) throw new Error()
+    const data = await res.json()
+    document.getElementById('starCount').textContent = data.stargazers_count || 0
+  } catch {
+    document.getElementById('starCount').textContent = '⭐'
+  }
+}
+fetchStars()
+</script>
+</body>
+</html>
