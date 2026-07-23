@@ -2,6 +2,16 @@
 
 # Changelog
 
+## 2026-07-23
+
+### 🎨 Distribution Page Expansion
+
+- **Architecture docs pages** — `huisheng-client.html` (frontend architecture) + `huisheng-serve.html` (backend architecture). All expanded by default, collapsible sections, SVG diagrams, code snippets, data flows, endpoint tables. Never again will someone ask "how is this project built?" 🤓
+- **Top-nav tri-link** — The release page now has "📐 Frontend / ⚙️ Backend" quick links at top-right. Both architecture pages link back to the release page and to each other. Seamless navigation between all three pages 🧭
+- **Star badge moved to the right** — Now sits alongside the arch links, consistent across all pages
+- **Star badge on arch pages too** — Both architecture pages now show the live GitHub star count from the API, same as the release page ✨
+- **All links use relative paths** — Double-clicking locally works just as well as on GitHub Pages 👌
+
 ## 2026-07-22
 
 ### 🛡️ Error Reporting Enhancements
