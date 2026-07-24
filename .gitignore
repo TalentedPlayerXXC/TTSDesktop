@@ -46,3 +46,4 @@ CODE_REVIEW_*.md
 
 # Feedback API token (contains GitHub token, do not commit)
 src/feedback/config.ts
+/.hermes
