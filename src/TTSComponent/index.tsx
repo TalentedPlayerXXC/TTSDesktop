@@ -65,6 +65,7 @@ interface MultiLine {
   id: number
   speakerId: string | null
   text: string
+  emotion: string
 }
 
 const MODES: { key: Mode; label: string }[] = [
@@ -119,12 +120,15 @@ const TTSComponent = () => {
   }, [inputSpeaker, availableEmotions])
 
   // 多人模式：选择角色后获取可用情感（跟单人一致，通过 IPC getCharacterEmotions）
+  const emotionReqIdRef = useRef(0)
   useEffect(() => {
     if (!inputSpeaker || !window.electronAPI) { setAvailableEmotions([]); return }
     const speaker = characters.find(s => s.id === inputSpeaker)
     if (!speaker?.game) { setAvailableEmotions([]); return }
     if (speaker.game === '🎨 自定义') { setAvailableEmotions([]); return }
+    const reqId = ++emotionReqIdRef.current
     window.electronAPI.getCharacterEmotions({ game: speaker.game, name: speaker.name }).then((res: any) => {
+      if (reqId !== emotionReqIdRef.current) return
       if (res.status === 'ok' && res.data) {
         setAvailableEmotions(res.data)
         setInputEmotion(res.data[0] || '')
@@ -381,7 +385,7 @@ const TTSComponent = () => {
   }
 
   const addLine = () => {
-    setLines(prev => [...prev, { id: lineIdCounter++, speakerId: null, text: '' }])
+    setLines(prev => [...prev, { id: lineIdCounter++, speakerId: null, text: '', emotion: '' }])
   }
 
   const removeLine = (id: number) => {
@@ -404,7 +408,7 @@ const TTSComponent = () => {
 
   const handleAddLine = () => {
     if (!inputSpeaker || !inputText.trim()) return
-    setLines(prev => [...prev, { id: lineIdCounter++, speakerId: inputSpeaker, text: inputText.trim() }])
+    setLines(prev => [...prev, { id: lineIdCounter++, speakerId: inputSpeaker, text: inputText.trim(), emotion: inputEmotion || '' }])
     setInputText('')
   }
 
@@ -462,7 +466,7 @@ const TTSComponent = () => {
         for (const line of validLines) {
           const speaker = characters.find(c => c.id === line.speakerId)
           if (!speaker) continue
-          const pathRes = await window.electronAPI?.getCharacterPath({ game: speaker.game || '', name: speaker.name, emotion: '默认' })
+          const pathRes = await window.electronAPI?.getCharacterPath({ game: speaker.game || '', name: speaker.name, emotion: line.emotion || '默认' })
           if (pathRes?.status === 'ok') {
             items.push({ text: line.text.trim(), ref_audio: pathRes.path })
           }
@@ -627,6 +631,7 @@ const TTSComponent = () => {
                         <div className='tts-chat-bubble-content'>
                           <div className='tts-chat-bubble-header'>
                             <span className='tts-chat-bubble-name'>{speaker?.name || '未选择'}</span>
+                            {line.emotion && <span className='tts-chat-bubble-emotion'>{line.emotion}</span>}
                             <span className='tts-chat-bubble-index'>#{i + 1}</span>
                           </div>
                           {isEditing ? (

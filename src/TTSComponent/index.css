@@ -492,6 +492,15 @@
   color: var(--text-primary);
 }
 
+.tts-chat-bubble-emotion {
+  font-size: 11px;
+  padding: 0 6px;
+  line-height: 16px;
+  border-radius: 8px;
+  color: #7c3aed;
+  background: rgba(124, 58, 237, 0.12);
+}
+
 .tts-chat-bubble-index {
   font-size: 11px;
   color: var(--text-muted);
