@@ -255,7 +255,8 @@ function SoundWorkshop() {
       // --- 启动音源并渲染 ---
       source.start(0)
       const renderedBuffer = await ctx.startRendering()
-      ctx.close().catch(() => {}) // 释放 AudioContext 资源
+      // OfflineAudioContext 没有 close()（只有实时 AudioContext 有），
+      // 渲染完成后无需手动关闭，交给 GC 释放即可
 
       console.log(
         '[export] native render OK —',

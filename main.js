@@ -24,6 +24,31 @@ let modelsDir = ''
 const serverExe = path.join(serverDir, 'tts_serve_mlx')
 const bundledModels = path.join(serverDir, 'models')
 
+// ==================== IPC 输入安全校验 ====================
+// 渲染层输入不可信：所有用于文件路径/URL 的参数必须先校验再使用
+
+// 只允许纯文件名：拒绝路径分隔符、..、空字节和控制字符
+function isValidFileName(name, maxLength = 120) {
+  if (typeof name !== 'string' || name.length === 0 || name.length > maxLength) return false
+  if (name === '.' || name === '..') return false
+  if (name.includes('/') || name.includes('\\') || name.includes('\0')) return false
+  // 控制字符（防日志注入 / 异常文件名）
+  if (/[\u0000-\u001f\u007f]/.test(name)) return false
+  return true
+}
+
+// 目标路径必须位于基目录内（resolve 后校验，防 ../ 绕过）
+function isPathInside(base, target) {
+  const rel = path.relative(path.resolve(base), path.resolve(target))
+  return rel === '' || (rel !== '..' && !rel.startsWith('..' + path.sep) && !path.isAbsolute(rel))
+}
+
+// 模型 key 只允许安全字符（用于 URL 路径拼接）
+function isValidModelKey(key) {
+  return typeof key === 'string' && key.length > 0 && key.length <= 80 &&
+    /^[A-Za-z0-9_.-]+$/.test(key) && !key.includes('..')
+}
+
 function httpGet(url) {
   return new Promise((resolve) => {
     const req = http.get(url, (res) => {
@@ -266,6 +291,10 @@ function getCustomSpeakersDir() {
 function getCharacterDir(game, name) {
   const folder = GAME_FOLDER_MAP[game]
   if (!folder) return null
+  if (!isValidFileName(name)) {
+    console.warn(`[TTS] 拦截非法角色名: ${JSON.stringify(name)}`)
+    return null
+  }
   // 自定义配音员走可写目录，其他参考音频走资源目录
   if (game === '🎨 自定义') {
     return path.join(getCustomSpeakersDir(), name)
@@ -439,16 +468,23 @@ ipcMain.handle('mongo-get-tags', async () => mongoCall({ type: 'getTags' }))
 
 // 自定义配音员：迁移音频文件
 ipcMain.handle('migrate-custom-speaker', async (_event, { name, sourceFilename, voiceType, temperament }) => {
+  if (!isValidFileName(name)) return { status: 'error', error: '角色名不合法' }
+  if (!isValidFileName(sourceFilename)) return { status: 'error', error: '源文件名不合法' }
+
   // PyInstaller 打包的二进制会把 api_output 放在 _internal/ 下
   const apiOutputDir = fs.existsSync(path.join(serverDir, 'api_output'))
     ? path.join(serverDir, 'api_output')
     : path.join(serverDir, '_internal', 'api_output')
   const src = path.join(apiOutputDir, sourceFilename)
-  const destDir = path.join(getCustomSpeakersDir(), name)
+  const customDir = getCustomSpeakersDir()
+  const destDir = path.join(customDir, name)
   const destFile = path.join(destDir, `${name}.wav`)
   const metaFile = path.join(destDir, '.meta.json')
 
   try {
+    // 双重保险：解析后路径必须仍位于各自基目录内
+    if (!isPathInside(apiOutputDir, src)) return { status: 'error', error: '源文件路径校验失败' }
+    if (!isPathInside(customDir, destDir)) return { status: 'error', error: '目标路径校验失败' }
     if (!fs.existsSync(src)) return { status: 'error', error: '源文件不存在' }
     fs.mkdirSync(destDir, { recursive: true })
     fs.copyFileSync(src, destFile)
@@ -469,7 +505,10 @@ ipcMain.handle('migrate-custom-speaker', async (_event, { name, sourceFilename, 
 
 // 自定义配音员：删除单个自定义角色（localStorage + 文件系统）
 ipcMain.handle('delete-custom-speaker', async (_event, { name }) => {
-  const speakerDir = path.join(getCustomSpeakersDir(), name)
+  if (!isValidFileName(name)) return { status: 'error', error: '角色名不合法' }
+  const customDir = getCustomSpeakersDir()
+  const speakerDir = path.join(customDir, name)
+  if (!isPathInside(customDir, speakerDir)) return { status: 'error', error: '路径校验失败' }
   try {
     if (fs.existsSync(speakerDir)) {
       fs.rmSync(speakerDir, { recursive: true, force: true })
@@ -515,6 +554,7 @@ ipcMain.handle('recover-custom-speakers', async () => {
 // ==================== 模型下载（后端代理） ====================
 
 ipcMain.handle('start-model-download', async (event, modelKey) => {
+  if (!isValidModelKey(modelKey)) return { status: 'error', error: '模型 key 不合法' }
   try {
     const res = await fetch(`http://${SERVER_HOST}:${ACTUAL_PORT}/model/download`, {
       method: 'POST',
@@ -528,6 +568,7 @@ ipcMain.handle('start-model-download', async (event, modelKey) => {
 })
 
 ipcMain.handle('get-download-status', async (event, modelKey) => {
+  if (!isValidModelKey(modelKey)) return { status: 'error', error: '模型 key 不合法' }
   try {
     const res = await fetch(`http://${SERVER_HOST}:${ACTUAL_PORT}/model/download/status/${modelKey}`)
     return await res.json()
